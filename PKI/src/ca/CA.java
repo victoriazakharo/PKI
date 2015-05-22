@@ -141,4 +141,8 @@ public class CA {
 		}
 		return cert;
 	}
+	
+	public static void main(String[] args) {
+		new CA().start();
+	}
 }
