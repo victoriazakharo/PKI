@@ -26,8 +26,12 @@ public class CA {
 	private ServerSocket storageSocket, clientSocket;
 	private StorageThread storageThread;
 	private PrivateKey privateKey;	
+	public PrivateKey getPrivateKey() {
+		return privateKey;
+	}
+
 	private Scanner sc = new Scanner(System.in);	
-	private final String KEYSTORE_FILE = "cakeystore.jks",
+	public static String KEYSTORE_FILE = "cakeystore.jks",
 					     CA_ALIAS = "selfsigned",
 					     SIGN_ALGORITHM = "MD5WithRSA";
 	private final int STORAGE_PORT = 24,
@@ -46,7 +50,7 @@ public class CA {
 	
 	public void start() {
 		try {		
-			storageThread = new StorageThread(storageSocket.accept());
+			storageThread = new StorageThread(storageSocket.accept(), this);
 			storageThread.start();	
 		} catch (IOException e) {			
 			e.printStackTrace();
