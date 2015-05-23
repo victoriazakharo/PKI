@@ -4,6 +4,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import javax.crypto.BadPaddingException;
@@ -45,5 +46,28 @@ public class RSA {
             e.printStackTrace();
         }
         return cipherData;
-}
+	}
+	
+	public static byte[] decrypt(byte[] data, PrivateKey privateKey) {
+		Cipher cipher = null;
+		try {
+			cipher = Cipher.getInstance("RSA");
+			cipher.init(Cipher.DECRYPT_MODE, privateKey);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (NoSuchPaddingException e) {
+			e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			e.printStackTrace();
+		}
+		byte[] cipherData = null;
+		try {
+			cipherData = cipher.doFinal(data);
+		} catch (IllegalBlockSizeException e) {
+			e.printStackTrace();
+		} catch (BadPaddingException e) {
+			e.printStackTrace();
+		}
+		return cipherData;
+	}
 }
