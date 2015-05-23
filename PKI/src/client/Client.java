@@ -14,15 +14,15 @@ import java.util.Scanner;
 
 
 public class Client {
-	private final int CA_PORT = 23, STORAGE_PORT = 25;
-	private int clientPort;
-	private Scanner sc = new Scanner(System.in);
-	private Socket socket; 
-	private DataInputStream din;
-	private DataOutputStream dout;
-	private CertificateFactory certFactory;
-	private X509Certificate cert;
-	private PrivateKey privateKey;
+	protected final int CA_PORT = 23, STORAGE_PORT = 25;
+	protected int clientPort;
+	protected Scanner sc = new Scanner(System.in);
+	protected Socket socket; 
+	protected DataInputStream din;
+	protected DataOutputStream dout;
+	protected CertificateFactory certFactory;
+	protected X509Certificate cert;
+	protected PrivateKey privateKey;
 	
 	public Client() {
 		try {
@@ -47,7 +47,7 @@ public class Client {
         din = new DataInputStream(socket.getInputStream());       
     }
 	
-	private String getDistinguishedName() {
+	protected String getDistinguishedName() {
 		String CN, OU, O, L, ST, C;
 		System.out.println("Enter your name.");
 		CN = sc.nextLine();
