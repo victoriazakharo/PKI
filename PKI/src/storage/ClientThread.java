@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 
 public class ClientThread extends Thread {
@@ -22,14 +21,18 @@ public class ClientThread extends Thread {
 	 }
 	 
 	 public void run() {
+		String alias;	 
 		try {
-			String alias = din.readUTF();
-			X509Certificate cert = (X509Certificate)keyStore.getCertificate(alias);
-			byte[] encoded = cert.getEncoded();
-			dout.writeInt(encoded.length);
-			dout.write(encoded, 0, encoded.length);	
-		} catch (IOException | KeyStoreException | CertificateEncodingException e) {			
+			while((alias = din.readUTF()) != null) {
+				X509Certificate cert = (X509Certificate)keyStore.getCertificate(alias);
+				if(cert == null) {
+					dout.writeInt(0);
+				} else {				
+					dout.writeInt(1);				
+				}
+			}
+		} catch (IOException | KeyStoreException e) {			
 			e.printStackTrace();
-		}
+		}		
 	 }
 }
