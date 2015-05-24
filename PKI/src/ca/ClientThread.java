@@ -41,9 +41,10 @@ public class ClientThread extends Thread {
 	}
 	
 	public void run() {
-		String dn;
+		String dn, certID;
 		try {
-			while((dn = din.readUTF()) != null) {				
+			while((dn = din.readUTF()) != null) {	
+				certID=din.readUTF();
 				System.out.println("Approve user " + dn + " and give him certificate? (yes/no)");
 				String answer = ca.getScanner().nextLine();			
 				X509Certificate cert = null;
@@ -51,19 +52,19 @@ public class ClientThread extends Thread {
 				if(answer.equals("yes")) {
 					 pair = RSA.generateKeyPair();
 					try {
-						SaveKeyPair(pair, dn);						
+						SaveKeyPair(pair, certID);						
 					} catch (IOException e1) {					
 						e1.printStackTrace();
 					}
-					dout.writeInt(1);
 					cert = ca.createCertificate(pair.getPublic(), dn);			
 					ca.writeCertificateToStorage(cert);	
+					dout.writeInt(1);
 				} else {
 					dout.writeInt(0);
 				}					
 				
 				try {				
-					FileOutputStream out = new FileOutputStream("D://cert" + dn + ".cer");			  
+					FileOutputStream out = new FileOutputStream("D://cert" + certID + ".cer");			  
 			        out.write(cert.getEncoded());				
 			        out.close();
 				} catch (IOException | CertificateEncodingException e) {			

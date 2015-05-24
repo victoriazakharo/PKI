@@ -22,6 +22,7 @@ public class ServerThread extends Thread {
 		while(true) {
 	    	try {		
 				ClientThread clientThread = new ClientThread(socket.accept(), cert, privateKey);
+				
 				clientThread.start();	
 			} catch (IOException e) {			
 				e.printStackTrace();
