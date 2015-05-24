@@ -10,11 +10,13 @@ import crypto.RSA;
 
 public class ClientThread extends Thread {
 	private DataInputStream din; 
+	private DataOutputStream dout;
     private CA ca;
 	
 	public ClientThread(Socket s, CA ca) throws IOException 
 	{		
-		din = new DataInputStream(s.getInputStream());      
+		din = new DataInputStream(s.getInputStream()); 
+		dout = new DataOutputStream(s.getOutputStream());
         this.ca = ca;
 	}
 	
@@ -49,13 +51,16 @@ public class ClientThread extends Thread {
 				if(answer.equals("yes")) {
 					 pair = RSA.generateKeyPair();
 					try {
-						SaveKeyPair(pair, dn);
+						SaveKeyPair(pair, dn);						
 					} catch (IOException e1) {					
 						e1.printStackTrace();
 					}
+					dout.writeInt(1);
 					cert = ca.createCertificate(pair.getPublic(), dn);			
 					ca.writeCertificateToStorage(cert);	
-				}
+				} else {
+					dout.writeInt(0);
+				}					
 				
 				try {				
 					FileOutputStream out = new FileOutputStream("D://cert" + dn + ".cer");			  

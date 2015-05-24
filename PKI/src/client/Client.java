@@ -44,12 +44,17 @@ public class Client {
 	public void askCertificate() {		
 		try {
 			caDout.writeUTF(distinguishedName);
-			readCertificate();
-			readPrivateKey();
+			int answer = caDin.readInt();
+			if(answer == 1) {
+				readCertificate();
+				readPrivateKey();				
+			} else {
+				System.out.println("Certification request denied.");
+			}
 		} catch (IOException | CertificateException | InvalidKeySpecException |
 				NoSuchAlgorithmException e) {			
 			e.printStackTrace();
-		}		
+		}			
 	}
 	
 	private void initServerSocket() {
