@@ -1,6 +1,7 @@
 package ca;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
@@ -19,6 +20,12 @@ import java.util.Scanner;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 
+
+
+
+
+import sun.misc.BASE64Encoder;
+import sun.security.provider.X509Factory;
 import sun.security.x509.*;
 
 public class CA {
@@ -58,7 +65,8 @@ public class CA {
 		while (true) 
 		{		
 			try {
-				new ClientThread(clientSocket.accept(), this).start();				
+				new ClientThread(clientSocket.accept(), this).start();
+				System.out.println("Client added.");
 			} catch (IOException e) {				
 				e.printStackTrace();
 			}				
@@ -87,7 +95,7 @@ public class CA {
 		    keyStore.load(input, keystorePass.toCharArray());
 		    input.close();
 		    privateKey = (PrivateKey) keyStore.getKey(CA_ALIAS, caPass.toCharArray());
-		    java.security.cert.Certificate caCert = keyStore.getCertificate(CA_ALIAS);		 
+		    java.security.cert.Certificate caCert = keyStore.getCertificate(CA_ALIAS);
 		    byte[] encoded = caCert.getEncoded();
 		    X509CertImpl caCertImpl = new X509CertImpl(encoded);
 		    X509CertInfo caCertInfo = (X509CertInfo) caCertImpl.get(X509CertImpl.NAME + "."
@@ -100,12 +108,12 @@ public class CA {
 		}	   
 	}
 	
-	public X509Certificate createCertificate(PublicKey subjectKey, String dn) {
+	public X509Certificate createCertificate(PublicKey subjectKey, String CN, String OU, String O, String L, String S, String C) {
 		X509CertImpl cert = null;
-		if(subjectKey != null && dn != null) {
+		if(subjectKey != null) {
 			X500Name subject = null;
 			  try {
-				subject = new X500Name(dn);
+				subject = new X500Name(CN, OU, O, L, S, C);
 			} catch (IOException e) {			
 				e.printStackTrace();
 			}
