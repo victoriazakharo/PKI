@@ -91,6 +91,52 @@ public class Client {
 	public void clientWithServerSocketAuthorizationWork(){
 		System.out.println("Enter ID:");
 		int clientID=sc.nextInt();
+		firstClientAuthorization(clientID);
+		boolean result=true, authorized=false;
+		try
+		{
+			result=din.readBoolean();
+			if(result)
+			{
+				System.out.println("True");
+				authorized=secondClientAuthorization();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if(!authorized)
+		{
+			System.out.println("Authorization failed.");
+		}
+		else
+		{
+			System.out.println("Authorized.");
+		}
+	}
+	
+	
+	public void clientWithSocketAuthorizationWork(){
+		boolean checkResult=secondClientAuthorization();
+		try 
+		{
+			dout.writeBoolean(checkResult);
+			
+			if(checkResult)
+			{
+				System.out.println("Enter ID:");
+				int clientID=sc.nextInt();				
+				firstClientAuthorization(clientID);
+			}
+		} 
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	public void firstClientAuthorization(int clientID)
+	{
 		try 
 		{
 			readCertificate(clientID);
@@ -101,9 +147,9 @@ public class Client {
 		{
 			e.printStackTrace();
 		}
-		
 		byte[] encodedCert;
-		try {
+		try
+		{
 			int lengthCert=cert.getEncoded().length;
 			encodedCert=cert.getEncoded();
 			dout.writeInt(lengthCert);
@@ -115,19 +161,18 @@ public class Client {
 		    
 		    dout.writeInt(signature.length);
 			dout.write(signature, 0, signature.length);
-			System.out.println("Signature written.");
 			
-		} catch (CertificateEncodingException | IOException | InvalidKeyException | SignatureException e) {
-			// TODO Auto-generated catch block
+		}
+		catch (CertificateEncodingException | IOException | InvalidKeyException | SignatureException e) 
+		{
 			e.printStackTrace();
-		}		
+		}	
 	}
 	
-	
-	public void clientWithSocketAuthorizationWork(){
-		System.out.println("Enter ID:");
-		int clientID=sc.nextInt();		
+	public boolean secondClientAuthorization()
+	{
 		byte[] encodedCert;
+		boolean checkContinuation=false;
 		byte[] signature;
 		try {
 			int signLength=0;
@@ -137,40 +182,34 @@ public class Client {
 			CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 			InputStream in = new ByteArrayInputStream(encodedCert);
 			cert = (X509Certificate)certFactory.generateCertificate(in);
-			try
+
+			signLength=din.readInt();
+			signature=new byte[signLength];
+			din.read(signature, 0, signLength);
+			publicKey=cert.getPublicKey();
+			System.out.println(publicKey.toString());
+			sign.initVerify(publicKey);
+			sign.update(cert.getEncoded());
+			boolean result=sign.verify(signature);
+			cert.checkValidity();
+			if(result==true)
 			{
-				signLength=din.readInt();
-				signature=new byte[signLength];
-				din.read(signature, 0, signLength);
-				//System.out.println(new String(signature));
-				publicKey=cert.getPublicKey();
-				//readPublicKey(clientID);
-				System.out.println(publicKey.toString());
-				sign.initVerify(publicKey);
-				sign.update(cert.getEncoded());
-				boolean result=sign.verify(signature);
+				System.out.println("Certifacate is valid.");
 				cert.checkValidity();
-				if(result==true){
-					System.out.println("Is valid.");
-					cert.checkValidity();
-					System.out.println("Certificate in use.");
-				}
-				else
-				{
-					System.out.println("Invalid.");
-				}
-				
-			} catch (InvalidKeyException | SignatureException /*| InvalidKeySpecException | NoSuchAlgorithmException*/ | CertificateExpiredException | CertificateNotYetValidException | CertificateEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				checkContinuation=true;
+				System.out.println("Certificate in use.");
 			}
+			else
+			{
+				System.out.println("Invalid certifacate.");
+			}			
 			
-		} catch ( IOException | CertificateException e) {
+		} catch ( IOException | CertificateException | InvalidKeyException | SignatureException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}		
+		}	
+		return checkContinuation;
 	}
-	
 	
 	public X509Certificate getCertificateFromByteArray(byte[] bytes)
 	{
@@ -187,6 +226,7 @@ public class Client {
 		return result;
 		
 	}
+	
 	public void readCertificate(int ID) throws IOException, CertificateException{
 		FileInputStream fis = null;
 		 ByteArrayInputStream bais = null;
