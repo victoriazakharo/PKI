@@ -12,7 +12,7 @@ public class Shamir {
 		int x;
 		BigInteger sum;
 		
-		Share(int x, BigInteger sum){
+		public Share(int x, BigInteger sum){
 			this.sum=sum;
 			this.x=x;
 		}
