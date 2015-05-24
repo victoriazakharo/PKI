@@ -2,12 +2,15 @@ package resourceStorage;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -34,11 +37,16 @@ import crypto.Shamir.Share;
 import client.Client;
 
 public class ResourceStorage  extends Client{
-	public HashMap<String, List<List<Integer>>> accessMap;
+	private HashMap<String, List<List<Integer>>> accessMap;
+	private int clientResId;
 	
 	public ResourceStorage() {
 		super();
 		getAccessMap();
+	}
+	
+	public void sendFile(){
+		
 	}
 	
 	private void sendShare(Integer clientId, Share share){
@@ -191,8 +199,9 @@ public class ResourceStorage  extends Client{
 	public List<Integer> getAccessToFileList(String filename, Integer clientId){
 		List<List<Integer>> accessLists = accessMap.get(filename);
 		for(List<Integer> list : accessLists)
-			if(list.contains(clientId))
-				return list;
+			for(int i = 1;i<list.size();i++)
+				if(list.get(i).equals(clientId))
+					return list;
 		return null;
 	}
 	

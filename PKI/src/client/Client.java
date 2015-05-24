@@ -13,16 +13,16 @@ public class Client {
 	protected int clientPort;
 	protected Scanner sc = new Scanner(System.in);
 	protected Socket socket, CASocket; 
-	private ServerSocket serverSocket;
-	private DataInputStream din, CAdin;
-	private DataOutputStream dout, CAdout;
+	protected ServerSocket serverSocket;
+	protected DataInputStream din, CAdin;
+	protected DataOutputStream dout, CAdout;
 	protected CertificateFactory certFactory;
 	protected X509Certificate cert;
 	protected PrivateKey privateKey;
 	protected PublicKey publicKey;
-	private Signature sign;
-	private int mode;
-	private String distinguishedName;
+	protected Signature sign;
+	protected int mode;
+	protected String distinguishedName;
 	public Client() {
 		try {
 			sign=Signature.getInstance("MD5WithRSA");
