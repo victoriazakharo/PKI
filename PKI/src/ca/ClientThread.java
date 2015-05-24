@@ -28,14 +28,14 @@ public class ClientThread extends Thread {
 		// Store Public Key.
 		X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(
 				publicKey.getEncoded());
-		FileOutputStream fos = new FileOutputStream("D://public" +12+".key");
+		FileOutputStream fos = new FileOutputStream("D://public" +23+".key");
 		fos.write(x509EncodedKeySpec.getEncoded());
 		fos.close();
  
 		// Store Private Key.
 		PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(
 				privateKey.getEncoded());
-		fos = new FileOutputStream("D://private" +12+".key");
+		fos = new FileOutputStream("D://private" +23+".key");
 		fos.write(pkcs8EncodedKeySpec.getEncoded());
 		fos.close();
 	}
@@ -75,7 +75,7 @@ public class ClientThread extends Thread {
 			
 			try {
 				//Write centificate to file
-				FileOutputStream out = new FileOutputStream("D://cert12.cer");
+				FileOutputStream out = new FileOutputStream("D://cert23.cer");
 			    //BASE64Encoder encoder = new BASE64Encoder();
 		        out.write(cert.getEncoded());
 				//dout.writeInt(encodedCert.length);
