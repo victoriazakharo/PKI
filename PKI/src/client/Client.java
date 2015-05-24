@@ -116,7 +116,6 @@ public class Client {
 		    dout.writeInt(signature.length);
 			dout.write(signature, 0, signature.length);
 			System.out.println("Signature written.");
-			System.out.println(new String(signature));
 			
 		} catch (CertificateEncodingException | IOException | InvalidKeyException | SignatureException e) {
 			// TODO Auto-generated catch block
@@ -134,8 +133,10 @@ public class Client {
 			int signLength=0;
 			int length=din.readInt();
 			encodedCert=new byte[length];
-			din.readFully(encodedCert, 0, length);
-			cert=getCertificateFromByteArray(encodedCert);
+			din.read(encodedCert, 0, length);
+			CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+			InputStream in = new ByteArrayInputStream(encodedCert);
+			cert = (X509Certificate)certFactory.generateCertificate(in);
 			try
 			{
 				signLength=din.readInt();
@@ -143,11 +144,12 @@ public class Client {
 				din.read(signature, 0, signLength);
 				//System.out.println(new String(signature));
 				publicKey=cert.getPublicKey();
-				readPublicKey(clientID);
+				//readPublicKey(clientID);
 				System.out.println(publicKey.toString());
 				sign.initVerify(publicKey);
-				sign.update(signature);
+				sign.update(cert.getEncoded());
 				boolean result=sign.verify(signature);
+				cert.checkValidity();
 				if(result==true){
 					System.out.println("Is valid.");
 					cert.checkValidity();
@@ -158,12 +160,12 @@ public class Client {
 					System.out.println("Invalid.");
 				}
 				
-			} catch (InvalidKeyException | SignatureException | InvalidKeySpecException | NoSuchAlgorithmException | CertificateExpiredException | CertificateNotYetValidException e) {
+			} catch (InvalidKeyException | SignatureException /*| InvalidKeySpecException | NoSuchAlgorithmException*/ | CertificateExpiredException | CertificateNotYetValidException | CertificateEncodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
-		} catch ( IOException e) {
+		} catch ( IOException | CertificateException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}		
@@ -239,31 +241,28 @@ public class Client {
 	
 	protected String getDistinguishedName(DataOutputStream out) {
 		String CN="", OU="", O="", L="", ST="", C="";
+		String result="";
 		try
 		{
 		System.out.println("Enter your name.");
 		CN = sc.nextLine();
-		out.writeUTF(CN);
 		System.out.println("Enter your organization unit.");
 		OU = sc.nextLine();
-		out.writeUTF(OU);
 		System.out.println("Enter your organiztion name.");
 		O = sc.nextLine();
-		out.writeUTF(O);
 		System.out.println("Enter your locality (city) name.");
 		L = sc.nextLine();
-		out.writeUTF(L);
 		System.out.println("Enter your state name.");
-		ST = sc.nextLine();		
-		out.writeUTF(ST);
+		ST = sc.nextLine();	
 		System.out.println("Enter your country name.");
 		C = sc.nextLine();
-		out.writeUTF(C);
+		result=String.format("CN=%s, OU=%s, O=%s, L=%s, ST=%s, C=%s", CN, OU, O, L, ST, C);		
+		out.writeUTF(result);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		String result=String.format("CN=%s, OU=%s, O=%s, L=%s, ST=%s, C=%s", CN, OU, O, L, ST, C);		
+		
 		
 		return result;
 	}

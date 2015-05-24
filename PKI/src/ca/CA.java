@@ -108,12 +108,12 @@ public class CA {
 		}	   
 	}
 	
-	public X509Certificate createCertificate(PublicKey subjectKey, String CN, String OU, String O, String L, String S, String C) {
+	public X509Certificate createCertificate(PublicKey subjectKey, String dn) {
 		X509CertImpl cert = null;
 		if(subjectKey != null) {
 			X500Name subject = null;
 			  try {
-				subject = new X500Name(CN, OU, O, L, S, C);
+				subject = new X500Name(dn);
 			} catch (IOException e) {			
 				e.printStackTrace();
 			}

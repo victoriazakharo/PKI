@@ -45,44 +45,44 @@ public class ClientThread extends Thread {
 		while(true) {
 			dn = null; // distinguished name (CN=.., OU=.., O=.., L=.., ST=.., C=..)
 			try {
-				CN = din.readUTF();
-				OU = din.readUTF();
-				O = din.readUTF();
-				L = din.readUTF();
-				S = din.readUTF();
-				C = din.readUTF();
-				System.out.println("Approve user " + CN + " and give him certificate? (yes/no)");
+				dn = din.readUTF();
+				System.out.println("Approve user " + dn + " and give him certificate? (yes/no)");
 			} catch (IOException e) {			
 				e.printStackTrace();
 			}
 			String answer = ca.getScanner().nextLine();
 			byte[] encodedCert = null;
+			X509Certificate cert=null;
+			KeyPair pair=null;
 			if(answer.equals("yes")) {
-				KeyPair pair = RSA.generateKeyPair();
+				 pair = RSA.generateKeyPair();
 				try {
 					SaveKeyPair(pair);
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				X509Certificate cert = ca.createCertificate(pair.getPublic(), CN, OU, O, L, S, C);
+				cert = ca.createCertificate(pair.getPublic(), dn);			
 				ca.writeCertificateToStorage(cert);
+				
 				try {
+					
 					encodedCert = cert.getEncoded();
 				} catch (CertificateEncodingException e) {				
 					e.printStackTrace();
 				}
 			}
+			
 			try {
 				//Write centificate to file
-				//FileOutputStream out = new FileOutputStream("D://cert12.cer");
+				FileOutputStream out = new FileOutputStream("D://cert12.cer");
 			    //BASE64Encoder encoder = new BASE64Encoder();
-		        //out.write(caCert.getEncoded());
-				dout.writeInt(encodedCert.length);
-				if(encodedCert.length > 0) {
-					dout.write(encodedCert, 0, encodedCert.length);	
-				}
-			} catch (IOException e) {			
+		        out.write(cert.getEncoded());
+				//dout.writeInt(encodedCert.length);
+				//if(encodedCert.length > 0) {
+				//	dout.write(encodedCert, 0, encodedCert.length);	
+				//}
+			} catch (IOException | CertificateEncodingException e) {			
 				e.printStackTrace();
 			}	
 		}
