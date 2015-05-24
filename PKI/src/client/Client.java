@@ -4,251 +4,142 @@ import java.io.*;
 import java.net.*;
 import java.security.*;
 import java.security.cert.*;
-import java.security.spec.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Scanner;
-
 
 public class Client {
 	protected final int CA_PORT = 23, STORAGE_PORT = 25;
 	protected int clientPort;
 	protected Scanner sc = new Scanner(System.in);
-	protected Socket socket, CASocket; 
+	protected Socket socket, caSocket, storageSocket; 
 	protected ServerSocket serverSocket;
-	protected DataInputStream din, CAdin;
-	protected DataOutputStream dout, CAdout;
-	protected CertificateFactory certFactory;
+	protected DataInputStream din, caDin, storageDin;
+	protected DataOutputStream dout, caDout, storageDout;
+	protected final String CA_HOST = "127.0.0.1", STORAGE_HOST = "127.0.0.1";	
 	protected X509Certificate cert;
-	protected PrivateKey privateKey;
-	protected PublicKey publicKey;
-	protected Signature sign;
-	protected int mode;
-	protected String distinguishedName;
+	protected CertificateFactory certFactory;
+	protected PrivateKey privateKey;	
+	protected String distinguishedName, host;	
+	
 	public Client() {
+		initServerSocket();
 		try {
-			sign=Signature.getInstance("MD5WithRSA");
-			CASocket=new Socket("127.0.0.1", CA_PORT);
-			CAdin = new DataInputStream(CASocket.getInputStream());
-			CAdout = new DataOutputStream(CASocket.getOutputStream());
-			distinguishedName=getDistinguishedName(CAdout);
-		} catch (NoSuchAlgorithmException | IOException   e) {
+			certFactory = CertificateFactory.getInstance("X.509");			
+			caSocket = new Socket(CA_HOST, CA_PORT);
+			caDin = new DataInputStream(caSocket.getInputStream());
+			caDout = new DataOutputStream(caSocket.getOutputStream());
+			storageSocket = new Socket(STORAGE_HOST, STORAGE_PORT);
+			storageDin = new DataInputStream(storageSocket.getInputStream());
+			storageDout = new DataOutputStream(storageSocket.getOutputStream());
+			distinguishedName = getDistinguishedName();
+		} catch (IOException | CertificateException   e) {
 			e.printStackTrace();
-		}
+		}		
+		askCertificate();
+		ServerThread serverThread = new ServerThread(serverSocket, cert, privateKey);
+		serverThread.start();
+	}
+	
+	public void askCertificate() {		
 		try {
-			certFactory = CertificateFactory.getInstance("X.509");
-		} catch (CertificateException e1) {			
-			e1.printStackTrace();
-		}
-		//readCertificate();
-		chooseMode();
-		sc.next();
-		/*try {
-			setSocket(InetAddress.getLocalHost().getHostAddress());
+			caDout.writeUTF(distinguishedName);
+			readCertificate();
+			readPrivateKey();
+		} catch (IOException | CertificateException | InvalidKeySpecException |
+				NoSuchAlgorithmException e) {			
+			e.printStackTrace();
+		}		
+	}
+	
+	private void initServerSocket() {
+		System.out.println("Enter host.");
+		host = sc.nextLine();
+		System.out.println("Enter port number.");
+		clientPort = Integer.valueOf(sc.nextLine());
+		try {
+			serverSocket = new ServerSocket(clientPort);
+		} catch (IOException e) {		
+			e.printStackTrace();
+		} 
+	}	
+	
+	private void connectToClient() {
+		System.out.println("Enter host.");
+		String host = sc.nextLine();
+		System.out.println("Enter port number.");
+		int port = sc.nextInt();
+		try {
+			socket = new Socket(host, port);               	
+	        dout = new DataOutputStream(socket.getOutputStream());
+	        din = new DataInputStream(socket.getInputStream()); 
+	        acceptDataForAuthorization();
 		} catch (UnknownHostException e) {			
 			e.printStackTrace();
 		} catch (IOException e) {			
 			e.printStackTrace();
-		}*/
-	}
-	
-	public void chooseMode()
-	{
-		this.mode=1;
-		System.out.println("Choose mode:\n 1-Create connection.\n 2-Attach to connection");
-		mode=sc.nextInt();
-		System.out.println("Enter port number.");
-		clientPort = sc.nextInt();
-		if(mode!=1)
-		{
-			mode=2;
-			try 
-			{
-				socket=new Socket("127.0.0.1", clientPort);
-				din = new DataInputStream(socket.getInputStream());
-				dout = new DataOutputStream(socket.getOutputStream());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			System.out.println("Connected.");
-			clientWithSocketAuthorizationWork();
-		}
-		else
-		{
-			try {
-				serverSocket=new ServerSocket(clientPort);
-				System.out.println("ServerSocket created.");
-				socket=serverSocket.accept();
-				System.out.println("Client connected.");
-				din = new DataInputStream(socket.getInputStream());
-				dout = new DataOutputStream(socket.getOutputStream());
-				clientWithServerSocketAuthorizationWork();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
 		}
 	}
 	
-	public void clientWithServerSocketAuthorizationWork(){
-		System.out.println("Enter ID:");
-		int clientID=sc.nextInt();
-		firstClientAuthorization(clientID);
-		boolean result=true, authorized=false;
-		try
-		{
-			result=din.readBoolean();
-			if(result)
-			{
-				System.out.println("True");
-				authorized=secondClientAuthorization();
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		if(!authorized)
-		{
-			System.out.println("Authorization failed.");
-		}
-		else
-		{
-			System.out.println("Authorized.");
-		}
+	public void start() {
+		// menu
 	}
 	
-	
-	public void clientWithSocketAuthorizationWork(){
-		boolean checkResult=secondClientAuthorization();
-		try 
-		{
-			dout.writeBoolean(checkResult);
-			
-			if(checkResult)
-			{
-				System.out.println("Enter ID:");
-				int clientID=sc.nextInt();				
-				firstClientAuthorization(clientID);
-			}
-		} 
-		catch (IOException e) 
-		{
-			e.printStackTrace();
-		}
-	}
-	
-	public void firstClientAuthorization(int clientID)
-	{
-		try 
-		{
-			readCertificate(clientID);
-			readPrivateKey(clientID);
-			publicKey=cert.getPublicKey();
-		} 
-		catch (CertificateException | IOException | InvalidKeySpecException | NoSuchAlgorithmException  e)
-		{
-			e.printStackTrace();
-		}
-		byte[] encodedCert;
-		try
-		{
-			int lengthCert=cert.getEncoded().length;
-			encodedCert=cert.getEncoded();
-			dout.writeInt(lengthCert);
-			dout.write(encodedCert);
-			
-			sign.initSign(privateKey);
-		    sign.update(encodedCert);
-		    byte[] signature = sign.sign();
-		    
-		    dout.writeInt(signature.length);
-			dout.write(signature, 0, signature.length);
-			
-		}
-		catch (CertificateEncodingException | IOException | InvalidKeyException | SignatureException e) 
-		{
-			e.printStackTrace();
-		}	
-	}
-	
-	public boolean secondClientAuthorization()
-	{
-		byte[] encodedCert;
-		boolean checkContinuation=false;
-		byte[] signature;
+	private void acceptDataForAuthorization() {	
 		try {
-			int signLength=0;
-			int length=din.readInt();
-			encodedCert=new byte[length];
-			din.read(encodedCert, 0, length);
-			CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+			Signature sign = Signature.getInstance("MD5WithRSA");			
+			int length = din.readInt();
+			byte[] encodedCert = new byte[length];
+			din.read(encodedCert, 0, length);			
 			InputStream in = new ByteArrayInputStream(encodedCert);
 			cert = (X509Certificate)certFactory.generateCertificate(in);
-
-			signLength=din.readInt();
-			signature=new byte[signLength];
-			din.read(signature, 0, signLength);
-			publicKey=cert.getPublicKey();
-			System.out.println(publicKey.toString());
-			sign.initVerify(publicKey);
-			sign.update(cert.getEncoded());
-			boolean result=sign.verify(signature);
-			cert.checkValidity();
-			if(result==true)
-			{
-				System.out.println("Certifacate is valid.");
-				cert.checkValidity();
-				checkContinuation=true;
-				System.out.println("Certificate in use.");
-			}
-			else
-			{
-				System.out.println("Invalid certifacate.");
-			}			
 			
-		} catch ( IOException | CertificateException | InvalidKeyException | SignatureException e) {
-			// TODO Auto-generated catch block
+			int signLength = din.readInt();
+			byte[] signature = new byte[signLength];
+				din.read(signature, 0, signLength);	
+				//System.out.println(publicKey.toString());
+				try {
+					sign.initVerify(cert.getPublicKey());
+					sign.update(cert.getEncoded());				
+				} catch (InvalidKeyException | SignatureException e) {
+					e.printStackTrace();
+				}
+				if(sign.verify(signature)) {
+					System.out.println("Signature from client is valid.");
+					cert.checkValidity();
+					storageDout.writeUTF(distinguishedName);
+					if(storageDin.readInt() == 0) {
+						System.out.println("Sertificate is withdrawn.");
+					} else {
+						System.out.println("Sertificate is ok.");
+					}
+				}
+				else {
+					System.out.println("Signature from client is invalid.");
+				}				
+			
+		} catch ( IOException | CertificateException | NoSuchAlgorithmException
+				| SignatureException e) {			
 			e.printStackTrace();
-		}	
-		return checkContinuation;
+		}		
+	}	
+	
+	public void readCertificate() throws IOException, CertificateException{	
+		String id = String.format("%s %d",  host, clientPort);
+		String file = String.format("D://cert%s.cer", id);
+		FileInputStream fis = new FileInputStream(file);		  
+		byte encodedCertificate[] = new byte[fis.available()];
+		fis.read(encodedCertificate);
+		ByteArrayInputStream bais = new ByteArrayInputStream(encodedCertificate); 
+		cert = (X509Certificate)certFactory.generateCertificate(bais);
+		fis.close();		 
 	}
 	
-	public X509Certificate getCertificateFromByteArray(byte[] bytes)
-	{
-		X509Certificate result=null;
-		ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-		try 
-		{
-			CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-			result=(X509Certificate)certFactory.generateCertificate(bais);
-		} catch (CertificateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return result;
-		
-	}
-	
-	public void readCertificate(int ID) throws IOException, CertificateException{
-		FileInputStream fis = null;
-		 ByteArrayInputStream bais = null;
-		 fis = new FileInputStream("D://cert"+ID+".cer");
-		  
-		  // read the bytes
-		  byte value[] = new byte[fis.available()];
-		  fis.read(value);
-		  bais = new ByteArrayInputStream(value);
-		  
-		  // get X509 certificate factory
-		  CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-		   
-		  // certificate factory can now create the certificate 
-		  cert=(X509Certificate)certFactory.generateCertificate(bais);
-		  fis.close();
-		 
-	}
-	
-	public void readPrivateKey(int ID) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException{
-		File filePrivateKey = new File("D://private"+ID+".key");
-		FileInputStream fis = new FileInputStream("D://private"+ID+".key");
+	public void readPrivateKey() throws InvalidKeySpecException, NoSuchAlgorithmException, IOException{
+		String id = String.format("%s %d",  host, clientPort);
+		String file = String.format("D://private%s.key", id);
+		File filePrivateKey = new File(file);
+		FileInputStream fis = new FileInputStream(file);
 		byte[] encodedPrivateKey = new byte[(int) filePrivateKey.length()];
 		fis.read(encodedPrivateKey);
 		fis.close();
@@ -256,34 +147,10 @@ public class Client {
 		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 		PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(encodedPrivateKey);
 		privateKey = keyFactory.generatePrivate(privateKeySpec);
-		
 	}
 	
-	public void readPublicKey(int ID) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException{
-		File filePrivateKey = new File("D://public"+ID+".key");
-		FileInputStream fis = new FileInputStream("D://public"+ID+".key");
-		byte[] encodedPrivateKey = new byte[(int) filePrivateKey.length()];
-		fis.read(encodedPrivateKey);
-		fis.close();
-		
-		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-		X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encodedPrivateKey);
-		publicKey = keyFactory.generatePublic(publicKeySpec);
-		System.out.println(publicKey.toString());
-		
-	}
-	
-	public void setSocket(String host) throws UnknownHostException, IOException {       
-    	socket = new Socket(host, clientPort);               	
-        dout = new DataOutputStream(socket.getOutputStream());
-        din = new DataInputStream(socket.getInputStream());       
-    }
-	
-	protected String getDistinguishedName(DataOutputStream out) {
-		String CN="", OU="", O="", L="", ST="", C="";
-		String result="";
-		try
-		{
+	protected String getDistinguishedName() {
+		String CN, OU, O, L, ST, C;		
 		System.out.println("Enter your name.");
 		CN = sc.nextLine();
 		System.out.println("Enter your organization unit.");
@@ -296,19 +163,11 @@ public class Client {
 		ST = sc.nextLine();	
 		System.out.println("Enter your country name.");
 		C = sc.nextLine();
-		result=String.format("CN=%s, OU=%s, O=%s, L=%s, ST=%s, C=%s", CN, OU, O, L, ST, C);		
-		out.writeUTF(result);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-		return result;
+		return String.format("CN=%s, OU=%s, O=%s, L=%s, ST=%s, C=%s", CN, OU, O, L, ST, C);
 	}
 	
 	public static void main(String[] args) {
-		Client client = new Client();
-		
+		Client client = new Client();	
+		client.start();
 	}
 }
