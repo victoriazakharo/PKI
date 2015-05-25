@@ -58,18 +58,18 @@ public class ClientThread extends Thread {
 					}
 					cert = ca.createCertificate(pair.getPublic(), dn);			
 					ca.writeCertificateToStorage(cert);	
+					try {				
+						FileOutputStream out = new FileOutputStream("D://cert" + certID + ".cer");			  
+				        out.write(cert.getEncoded());				
+				        out.close();
+					} catch (IOException | CertificateEncodingException e) {			
+						e.printStackTrace();
+					}	
 					dout.writeInt(1);
 				} else {
 					dout.writeInt(0);
 				}					
 				
-				try {				
-					FileOutputStream out = new FileOutputStream("D://cert" + certID + ".cer");			  
-			        out.write(cert.getEncoded());				
-			        out.close();
-				} catch (IOException | CertificateEncodingException e) {			
-					e.printStackTrace();
-				}	
 			}
 		} catch (IOException e) {			
 			e.printStackTrace();
