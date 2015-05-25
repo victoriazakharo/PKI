@@ -12,7 +12,6 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
@@ -27,21 +26,14 @@ public class CA {
 	private ServerSocket storageSocket, clientSocket;
 	private StorageThread storageThread;
 	private PrivateKey privateKey;	
-	private KeyStore keyStore;
 	public PrivateKey getPrivateKey() {
 		return privateKey;
 	}
 
-	public KeyStore getKeyStore()
-	{
-		return keyStore;
-	}
-	
 	private Scanner sc = new Scanner(System.in);	
 	public static String KEYSTORE_FILE = "cakeystore.jks",
 					     CA_ALIAS = "selfsigned",
 					     SIGN_ALGORITHM = "MD5WithRSA";
-	
 	private final int STORAGE_PORT = 24,
 					  CLIENT_PORT = 23,
 				      EXPIRE_DAYS = 360;	
@@ -81,22 +73,8 @@ public class CA {
 	
 	public void writeCertificateToStorage(X509Certificate cert) {
 		storageThread.storeCertificate(cert);
-		System.out.println("Sertificate written to StorageThread");
 	}	
 	
-	public void writeCertificateToStorage(X509Certificate cert, String alias) {
-		storageThread.storeCertificate(cert);
-		try {
-			keyStore.setCertificateEntry(alias, cert);
-		} catch (KeyStoreException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}	
-	
-	public boolean containsCertificate(X509Certificate cert) {
-		return storageThread.hasCertificate(cert);
-	}
 	// self signed certificate was created with command "keytool -genkey
 	// -keyalg RSA -alias selfsigned -keystore cakeystore.jks -storepass
 	// capassword -validity 360 -keysize 2048"	
@@ -107,11 +85,11 @@ public class CA {
 		String caPass = sc.nextLine();
 		try {
 			FileInputStream input = new FileInputStream(KEYSTORE_FILE);
-			keyStore = KeyStore.getInstance("JKS");
+			KeyStore keyStore = KeyStore.getInstance("JKS");
 		    keyStore.load(input, keystorePass.toCharArray());
 		    input.close();
 		    privateKey = (PrivateKey) keyStore.getKey(CA_ALIAS, caPass.toCharArray());
-		    Certificate caCert = keyStore.getCertificate(CA_ALIAS);
+		    java.security.cert.Certificate caCert = keyStore.getCertificate(CA_ALIAS);
 		    byte[] encoded = caCert.getEncoded();
 		    X509CertImpl caCertImpl = new X509CertImpl(encoded);
 		    X509CertInfo caCertInfo = (X509CertInfo) caCertImpl.get(X509CertImpl.NAME + "."

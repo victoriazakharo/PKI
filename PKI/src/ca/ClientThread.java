@@ -4,9 +4,7 @@ import java.io.*;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.*;
-import java.security.cert.Certificate;
 import java.security.spec.*;
-import java.util.Enumeration;
 
 import crypto.RSA;
 
@@ -25,7 +23,9 @@ public class ClientThread extends Thread {
 	public void SaveKeyPair(KeyPair keyPair, String id) throws IOException {
 		PrivateKey privateKey = keyPair.getPrivate();
 		PublicKey publicKey = keyPair.getPublic();
-
+ 
+		System.out.println(publicKey.toString());
+		// Store Public Key.
 		X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(
 				publicKey.getEncoded());
 		FileOutputStream fos = new FileOutputStream("D://public" + id + ".key");
@@ -70,7 +70,7 @@ public class ClientThread extends Thread {
 					dout.writeInt(client.Client.CERTIFICATE_DENIED);
 				}
 			}
-		} catch (IOException  e) {			
+		} catch (IOException e) {			
 			e.printStackTrace();
 		}
 	}

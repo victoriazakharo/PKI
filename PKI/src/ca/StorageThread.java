@@ -28,11 +28,7 @@ public class StorageThread extends Thread {
 		certQueue.add(cert);
 	}
 	
-	public boolean hasCertificate(X509Certificate cert){
-		return certQueue.contains(cert);
-	}
 	public void run() {
-		System.out.println("StorageThread started.");
 		while(true) {
 			X509Certificate cert = null;
 			try {
