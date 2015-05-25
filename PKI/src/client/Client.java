@@ -9,8 +9,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Scanner;
 
 public class Client {
-	public static int CA_PORT = 23, STORAGE_PORT = 64000;
-	public static int AUTHORIZE = 1, EXIT = 4, GET_FILE = 2, BREAK_CLIENT = 3,SEND_SHARE = 5, GET_SHARE = 6,
+	public static int CA_PORT = 23, STORAGE_PORT = 640;
+	public static final int AUTHORIZE = 1, EXIT = 4, GET_FILE = 2, BREAK_CLIENT = 3,SEND_SHARE = 5, GET_SHARE = 6,
 			CERTIFICATE_WRITTEN = -1, CERTIFICATE_DENIED = -2;
 	protected int clientPort;
 	protected Scanner sc = new Scanner(System.in);
@@ -20,7 +20,7 @@ public class Client {
 	protected DataOutputStream dout, caDout, storageDout;
 	public static final String CA_HOST = "127.0.0.1",
 			STORAGE_HOST = "127.0.0.1";
-	protected X509Certificate cert;
+	protected X509Certificate cert,anotherCert;
 	protected CertificateFactory certFactory;
 	protected PrivateKey privateKey;
 	protected String distinguishedName, host, certName;
@@ -183,8 +183,7 @@ public class Client {
 			byte[] encodedCert = cert.getEncoded();
 			dout.writeInt(encodedCert.length);
 			dout.write(encodedCert);
-
-			System.out.println(cert.getPublicKey());
+			
 			sign.initSign(privateKey);
 			sign.update(encodedCert);
 			byte[] signature = sign.sign();
@@ -203,21 +202,21 @@ public class Client {
 			byte[] encodedCert = new byte[length];
 			din.read(encodedCert, 0, length);
 			InputStream in = new ByteArrayInputStream(encodedCert);
-			cert = (X509Certificate) certFactory.generateCertificate(in);
+			anotherCert = (X509Certificate) certFactory.generateCertificate(in);
 
 			length = din.readInt();
 			byte[] signature = new byte[length];
 			din.read(signature, 0, length);
 			// System.out.println(publicKey.toString());
 			try {
-				sign.initVerify(cert.getPublicKey());
-				sign.update(cert.getEncoded());
+				sign.initVerify(anotherCert.getPublicKey());
+				sign.update(anotherCert.getEncoded());
 			} catch (InvalidKeyException | SignatureException e) {
 				e.printStackTrace();
 			}
 			if (sign.verify(signature)) {
 				System.out.println("Signature from client is valid.");
-				cert.checkValidity();
+				anotherCert.checkValidity();
 				System.out.println("Sertificate is up to date.");
 				storageDout.writeUTF(distinguishedName);							
 				if (storageDin.readInt() == 0) {

@@ -29,7 +29,7 @@ import java.security.cert.X509Certificate;
 public class ClientThread extends Thread {
 	protected DataInputStream din, storageDin;
 	protected DataOutputStream dout, storageDout;
-	protected X509Certificate cert;
+	protected X509Certificate cert, anotherCert;
 	protected PrivateKey privateKey;	
 	protected Signature sign;
 	protected Socket storageSocket; 
@@ -45,6 +45,7 @@ public class ClientThread extends Thread {
 			port = s.getLocalPort();
 			storageSocket = new Socket(Client.STORAGE_HOST, Client.STORAGE_PORT);
 			storageDin = new DataInputStream(storageSocket.getInputStream());
+			storageDout =  new DataOutputStream(storageSocket.getOutputStream());
 		} catch (IOException | NoSuchAlgorithmException e) {			
 			e.printStackTrace();
 		}		
@@ -128,28 +129,28 @@ public class ClientThread extends Thread {
 			
 			CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 			InputStream in = new ByteArrayInputStream(encodedCert);
-			cert = (X509Certificate)certFactory.generateCertificate(in);
+			anotherCert = (X509Certificate)certFactory.generateCertificate(in);
 
 			length = din.readInt();
 			byte[] signature = new byte[length];
 			din.read(signature, 0, length);			
 			//System.out.println(publicKey.toString());
-			sign.initVerify(cert.getPublicKey());
-			System.out.println(cert.getPublicKey());
-			sign.update(cert.getEncoded());			
+			sign.initVerify(anotherCert.getPublicKey());
+			System.out.println(anotherCert.getPublicKey());
+			sign.update(anotherCert.getEncoded());			
 			if(sign.verify(signature)) {
 				System.out.println("Signature from client is valid.");
-				cert.checkValidity();
+				anotherCert.checkValidity();
 				System.out.println("Sertificate is up to date.");
-				/*storageDout.writeUTF(cert.getIssuerDN().toString());
+				storageDout.writeUTF(anotherCert.getSubjectDN().toString());
 				if(storageDin.readInt() == 0) {
 					System.out.println("Sertificate is withdrawn.");
 					return false;
 				} else {
 					System.out.println("Sertificate is ok.");
 					return true;
-				}*/
-				return true;
+				}
+				
 			}
 			else {
 				System.out.println("Signature from client is invalid.");
