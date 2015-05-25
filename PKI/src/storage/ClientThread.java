@@ -23,9 +23,10 @@ public class ClientThread extends Thread {
 	 public void run() {
 		String alias;	 
 		try {
-			while((alias = din.readUTF()) != null) {
+			while((alias = din.readUTF()) != null) {	
+				System.out.println("Got request from client.");
 				X509Certificate cert = (X509Certificate)keyStore.getCertificate(alias);
-				if(cert == null) {
+				if(cert == null) {					
 					dout.writeInt(0);
 				} else {				
 					dout.writeInt(1);				

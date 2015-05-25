@@ -1,7 +1,6 @@
 package ca;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
@@ -20,12 +19,6 @@ import java.util.Scanner;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 
-
-
-
-
-import sun.misc.BASE64Encoder;
-import sun.security.provider.X509Factory;
 import sun.security.x509.*;
 
 public class CA {
@@ -51,6 +44,7 @@ public class CA {
 			clientSocket = new ServerSocket(CLIENT_PORT);
 		} catch (IOException e) {			
 			e.printStackTrace();
+			return;
 		}			
 		initPrivateInfoFromKeyStorage();		
 	}
@@ -66,7 +60,7 @@ public class CA {
 		{		
 			try {
 				new ClientThread(clientSocket.accept(), this).start();
-				System.out.println("Client added.");
+				System.out.println("Client connected.");
 			} catch (IOException e) {				
 				e.printStackTrace();
 			}				

@@ -8,7 +8,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -37,7 +36,8 @@ public class Storage {
     private final String KEYSTORE_FILE = "cakeystore.jks",
 		     CA_ALIAS = "selfsigned",
 		     SIGN_ALGORITHM = "MD5WithRSA",
-		     PASS_ALPHABETH = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		     PASS_ALPHABETH = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+		     CA_HOST = "127.0.0.1";
     private Random rnd = new Random();
 	private Scanner sc = new Scanner(System.in);	
     
@@ -50,7 +50,7 @@ public class Storage {
     	initKeystorageAndCACert();
     	try {
     		storageSocket = new ServerSocket(CLIENT_PORT);
-			setCASocket(InetAddress.getLocalHost().getHostAddress());
+			setCASocket(CA_HOST);
 		} catch (UnknownHostException e) {			
 			e.printStackTrace();
 		} catch (IOException e) {			
