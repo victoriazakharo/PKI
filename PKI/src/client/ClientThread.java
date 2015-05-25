@@ -2,19 +2,10 @@ package client;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.math.BigInteger;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -26,8 +17,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
-import crypto.Shamir.Share;
-
 public class ClientThread extends Thread {
 	private DataInputStream din;
 	private DataOutputStream dout;
@@ -36,12 +25,10 @@ public class ClientThread extends Thread {
 	private PublicKey publicKey;
 	private Signature sign;
 	private boolean authorizationResult;
-	private int port;
 	public ClientThread(Socket s, X509Certificate cert, PrivateKey privateKey) {
 		this.cert = cert;
 		this.authorizationResult=false;
 		this.privateKey = privateKey;
-		port = s.getLocalPort();
 		try {
 			sign = Signature.getInstance("MD5WithRSA");
 			dout = new DataOutputStream(s.getOutputStream());
@@ -56,74 +43,7 @@ public class ClientThread extends Thread {
 		sendDataForAuthorization();
 		System.out.println("ClientThread Started!!!!");
 		clientWithServerSocketAuthorizationWork();
-		try {
-			int action = din.readInt();
-			if(action == 1){
-				String filename = din.readUTF();
-				int x = din.readInt();
-				String sum = din.readUTF();
-				writeToFile(filename,x,sum);
-			}
-			if(action == 2){
-				String filename = din.readUTF();
-				Share share = readFromFile(filename);
-				dout.writeInt(share.getX());
-				dout.writeUTF(share.getSum().toString());
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
-	
-
-	private static void clearFile(String filename) {
-		try {
-			Files.write(Paths.get(filename),
-					(new String()).getBytes(),
-					StandardOpenOption.TRUNCATE_EXISTING);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private void writeToFile(String filename, int x, String sum) {
-		try {
-			if(readFromFile(filename)!=null)
-				clearFile("resources\\clientComputers\\shares"+port+".txt");
-			PrintWriter fileWriter = new PrintWriter(new BufferedWriter(
-					new FileWriter("resources\\clientComputers\\shares"+port+".txt", true)));
-			fileWriter.write(filename + " " + x + " " + sum+"\n");
-			fileWriter.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private Share readFromFile(String filename){
-		Share share = null;
-		try {
-			BufferedReader fileReader = new BufferedReader(new FileReader(
-					"resources\\clientComputers\\shares"+port+".txt"));
-			String str;
-
-			while ((str = fileReader.readLine()) != null) {
-				if (str.substring(0, Integer.valueOf(str.indexOf(" "))).equals(
-						filename)) {
-					String[] parts = str.split(" ");
-					share = new Share(Integer.valueOf(parts[1]),new BigInteger(parts[2]));
-					break;
-				}
-			}
-			fileReader.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return share;
-	}
-
-	
 	private void sendDataForAuthorization() {		
 		try {
 			int lengthCert = cert.getEncoded().length;

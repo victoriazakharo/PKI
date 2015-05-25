@@ -42,12 +42,7 @@ public class Client {
 			e.printStackTrace();
 		}		
 		askCertificate();
-		initiateThread();
-	}
-	
-	protected void initiateThread() {
-		ServerThread serverThread = new ServerThread(serverSocket, cert,
-				privateKey);
+		ServerThread serverThread = new ServerThread(serverSocket, cert, privateKey);
 		serverThread.start();
 	}
 	
@@ -83,10 +78,10 @@ public class Client {
 	}	
 	
 	private void connectToClient() {
-		System.out.println("Enter host.");
-		String host = sc.nextLine();	
 		System.out.println("Enter port number.");
-		int port = sc.nextInt();	
+		int port = sc.nextInt();
+		System.out.println("Enter host.");
+		String host = sc.nextLine();		
 		try {
 			socket = new Socket(host, port);        
 			din = new DataInputStream(socket.getInputStream()); 
@@ -100,7 +95,7 @@ public class Client {
 	}
 	
 	public void start() {
-		/*System.out.println("Choose mode:\n 1-Create connection.\n 2-Attach to connection");
+		System.out.println("Choose mode:\n 1-Create connection.\n 2-Attach to connection");
 		int mode=sc.nextInt();
 		if(mode==1)
 		{
@@ -121,46 +116,8 @@ public class Client {
 		{
 			connectToClient();
 			clientWithSocketAuthorizationWork();
-		}*/
-		
-		connectToClient();
-		int menu = 1,access = 0;
-		try {
-			dout.writeUTF(socket.getInetAddress().getHostName());
-			dout.writeInt(serverSocket.getLocalPort());
-			while (menu == 1) {
-				System.out.println("Input 0 - to exit, 1 - to get file");
-				menu = sc.nextInt();
-				String filename;
-				dout.writeInt(menu);
-				if (menu == 1) {
-					System.out.println("Input filename");
-					filename = sc.next();
-					dout.writeUTF(filename);
-					access = din.readInt();
-					System.out.println("Access:"+access);
-					if(access==0)
-						continue;
-					String content= new String(getBytesDecrypted());
-					System.out.println(content);
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		
-	}
-	
-	private byte[] getBytesDecrypted() {
-		byte[] out=null;
-		try {
-		int length = din.readInt();
-		out = new byte[length];
-			din.read(out, 0, length);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return out;
 	}
 	
 	public void clientWithServerSocketAuthorizationWork(){
