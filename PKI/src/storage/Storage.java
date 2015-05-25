@@ -26,7 +26,7 @@ import java.util.Scanner;
 
 public class Storage {
 	private final int CA_PORT = 24,
-					  CLIENT_PORT = 25;
+					  CLIENT_PORT = 64000;
 	private Socket caSocket;     
 	private ServerSocket storageSocket;
     private DataInputStream din;

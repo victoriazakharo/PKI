@@ -9,7 +9,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Scanner;
 
 public class Client {
-	public static int CA_PORT = 23, STORAGE_PORT = 25;
+	public static int CA_PORT = 23, STORAGE_PORT = 64000;
 	public static int AUTHORIZE = 1, EXIT = 4, GET_FILE = 2, BREAK_CLIENT = 3,SEND_SHARE = 5, GET_SHARE = 6,
 			CERTIFICATE_WRITTEN = -1, CERTIFICATE_DENIED = -2;
 	protected int clientPort;
@@ -27,16 +27,18 @@ public class Client {
 	protected Signature sign;
 
 	public Client() {
-		initServerSocket();
 		try {
 			sign = Signature.getInstance("MD5WithRSA");
 			certFactory = CertificateFactory.getInstance("X.509");
+			storageSocket = new Socket(STORAGE_HOST, STORAGE_PORT);
+			storageDin = new DataInputStream(storageSocket.getInputStream());
+			storageDout = new DataOutputStream(storageSocket.getOutputStream());			
+			initServerSocket();
+			
 			caSocket = new Socket(CA_HOST, CA_PORT);
 			caDin = new DataInputStream(caSocket.getInputStream());
 			caDout = new DataOutputStream(caSocket.getOutputStream());
-			storageSocket = new Socket(STORAGE_HOST, STORAGE_PORT);
-			storageDin = new DataInputStream(storageSocket.getInputStream());
-			storageDout = new DataOutputStream(storageSocket.getOutputStream());
+			
 			distinguishedName = getDistinguishedName();
 		} catch (IOException | CertificateException | NoSuchAlgorithmException e) {
 			e.printStackTrace();
@@ -217,17 +219,14 @@ public class Client {
 				System.out.println("Signature from client is valid.");
 				cert.checkValidity();
 				System.out.println("Sertificate is up to date.");
-				/*storageDout.writeUTF(distinguishedName);
-				int ss=storageDin.readInt();
-				System.out.println(ss);
-				if (ss == 0) {
+				storageDout.writeUTF(distinguishedName);							
+				if (storageDin.readInt() == 0) {
 					System.out.println("Sertificate is withdrawn.");
 					return false;
 				} else {
 					System.out.println("Sertificate is ok.");
 					return true;
-				}*/
-				return true;
+				}
 			} else {
 				System.out.println("Signature from client is invalid.");
 				return false;
@@ -272,7 +271,7 @@ public class Client {
 		CN = sc.nextLine();
 		System.out.println("Enter your organization unit.");
 		OU = sc.nextLine();
-		System.out.println("Enter your organiztion name.");
+		System.out.println("Enter your organization name.");
 		O = sc.nextLine();
 		System.out.println("Enter your locality (city) name.");
 		L = sc.nextLine();
