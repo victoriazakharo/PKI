@@ -133,6 +133,13 @@ public class Client {
 			if (choice == AUTHORIZE) {
 				connectToClient();
 				authorize();
+				try {
+					dout.writeUTF(host);
+					dout.writeInt(clientPort);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				while (choice != BREAK_CLIENT) {
 					System.out.println(String.format(
 							"Enter\n%d to break client\n%d to get file.",

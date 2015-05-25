@@ -32,7 +32,7 @@ import client.Client;
 
 public class ResourceStorage extends Client {
 	
-	public HashMap<String, List<List<Integer>>> accessMap;
+	private HashMap<String, List<List<Integer>>> accessMap;
 
 	public ResourceStorage() {
 		super();
@@ -48,7 +48,7 @@ public class ResourceStorage extends Client {
 		}
 		while(true) {
 	    	try {		
-				ServerThread serverThread = new ServerThread(serverSocket.accept(),cert,privateKey, this);
+				ServerThread serverThread = new ServerThread(serverSocket.accept(),cert,privateKey, accessMap,this);
 				serverThread.start();	
 			} catch (IOException e) {			
 				e.printStackTrace();

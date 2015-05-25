@@ -68,9 +68,10 @@ public class ClientThread extends Thread {
 				} catch (IOException e) {					
 					e.printStackTrace();
 				}
+				getHostAndPort();
 				try {
 					while((request = din.readInt()) != Client.BREAK_CLIENT) {
-						responseForRequrest(request);
+						responseForRequest(request);
 					}
 				} catch (IOException e) {					
 					e.printStackTrace();
@@ -79,7 +80,9 @@ public class ClientThread extends Thread {
 		}		
 	}
 	
-	protected void responseForRequrest(int request) {
+	protected void getHostAndPort() {}
+
+	protected void responseForRequest(int request) {
 		try {
 			if(request == Client.SEND_SHARE){
 				String filename = din.readUTF();

@@ -43,14 +43,16 @@ public class ServerThread extends ClientThread{
 	private X509Certificate thisCert;
 	private PrivateKey privateKey;
 	private ResourceStorage resourceStorage;;
-	private int clientResId;
+	private Integer clientResId;
+	private HashMap<String, List<List<Integer>>> accessMap;
 	
 	
-	public ServerThread(Socket s, X509Certificate thisCert, PrivateKey privateKey, ResourceStorage rs){
+	public ServerThread(Socket s, X509Certificate thisCert, PrivateKey privateKey, HashMap<String, List<List<Integer>>> accessMap, ResourceStorage rs){
 		super(s, thisCert, privateKey);
 		this.thisCert = thisCert;
 		this.privateKey = privateKey;
 		resourceStorage = rs;
+		this.accessMap = accessMap;
 		try {
 			dout = new DataOutputStream(s.getOutputStream());
 			din = new DataInputStream(s.getInputStream());
@@ -60,7 +62,17 @@ public class ServerThread extends ClientThread{
 	}
 	
 	@Override
-	protected void responseForRequrest(int request) {
+	protected void getHostAndPort() {
+		try {
+			getClientID(din.readUTF(),din.readInt());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	protected void responseForRequest(int request) {
 		if(request == Client.GET_FILE){
 			sendFile();
 		}
@@ -173,7 +185,7 @@ public class ServerThread extends ClientThread{
 	}
 
 	public List<Integer> getAccessToFileList(String filename, Integer clientId) {
-		List<List<Integer>> accessLists = resourceStorage.accessMap.get(filename);
+		List<List<Integer>> accessLists = accessMap.get(filename);
 		for (List<Integer> list : accessLists)
 			for (int i = 1; i < list.size(); i++)
 				if (list.get(i).equals(clientId))
