@@ -58,7 +58,6 @@ public class ClientThread extends Thread {
 					}
 					cert = ca.createCertificate(pair.getPublic(), dn);			
 					ca.writeCertificateToStorage(cert);	
-					dout.writeInt(client.Client.CERTIFICATE_WRITTEN);
 					try {				
 						FileOutputStream out = new FileOutputStream("D://cert" + certID + ".cer");			  
 				        out.write(cert.getEncoded());				
@@ -66,6 +65,7 @@ public class ClientThread extends Thread {
 					} catch (IOException | CertificateEncodingException e) {			
 						e.printStackTrace();
 					}	
+					dout.writeInt(client.Client.CERTIFICATE_WRITTEN);
 				} else {
 					dout.writeInt(client.Client.CERTIFICATE_DENIED);
 				}
