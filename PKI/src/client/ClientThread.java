@@ -133,23 +133,21 @@ public class ClientThread extends Thread {
 			length = din.readInt();
 			byte[] signature = new byte[length];
 			din.read(signature, 0, length);			
-			//System.out.println(publicKey.toString());
 			sign.initVerify(cert.getPublicKey());
-			System.out.println(cert.getPublicKey());
-			sign.update(cert.getEncoded());			
+			sign.update(cert.getEncoded());		
+			//fail
 			if(sign.verify(signature)) {
 				System.out.println("Signature from client is valid.");
 				cert.checkValidity();
 				System.out.println("Sertificate is up to date.");
-				/*storageDout.writeUTF(cert.getIssuerDN().toString());
+				storageDout.writeUTF(cert.getSubjectDN().toString());
 				if(storageDin.readInt() == 0) {
 					System.out.println("Sertificate is withdrawn.");
 					return false;
 				} else {
 					System.out.println("Sertificate is ok.");
 					return true;
-				}*/
-				return true;
+				}
 			}
 			else {
 				System.out.println("Signature from client is invalid.");

@@ -18,6 +18,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -67,7 +68,7 @@ public class Storage {
 			keyStore = KeyStore.getInstance("JKS");
 		    keyStore.load(input, keystorePass.toCharArray());
 		    input.close();
-		    java.security.cert.Certificate caCert = keyStore.getCertificate(CA_ALIAS);	
+		    Certificate caCert = keyStore.getCertificate(CA_ALIAS);	
 		    caPublicKey = caCert.getPublicKey();
 		}  catch (FileNotFoundException | NoSuchAlgorithmException |
 				KeyStoreException | CertificateException e) {			
@@ -96,7 +97,7 @@ public class Storage {
         }
         return text;
     }
-    
+    //read CAcertificate
     private void start(){
     	StorageThread storageThread = new StorageThread(storageSocket, keyStore);	
     	storageThread.start();
@@ -112,12 +113,12 @@ public class Storage {
 		    	
 		    	Signature sig = Signature.getInstance(SIGN_ALGORITHM);
 		    	sig.initVerify(caPublicKey);
-		    	sig.update(signatureBytes);
-		    	
+		    	sig.update(certBytes);
 		    	if(sig.verify(signatureBytes)) {
 		    		InputStream in = new ByteArrayInputStream(certBytes);
 		    		X509Certificate cert = (X509Certificate)certFactory.generateCertificate(in);
-		    		keyStore.setCertificateEntry(cert.getIssuerDN().toString(), cert);
+		    		System.out.println(cert.getSubjectDN().toString());
+		    		keyStore.setCertificateEntry(cert.getSubjectDN().toString(), cert);
 		    		File keystoreFile = new File(KEYSTORE_FILE);
 		    		FileOutputStream out = new FileOutputStream(keystoreFile);
 		    	    keyStore.store(out, generateRandomPassword());

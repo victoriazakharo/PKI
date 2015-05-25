@@ -183,8 +183,7 @@ public class Client {
 			byte[] encodedCert = cert.getEncoded();
 			dout.writeInt(encodedCert.length);
 			dout.write(encodedCert);
-
-			System.out.println(cert.getPublicKey());
+			
 			sign.initSign(privateKey);
 			sign.update(encodedCert);
 			byte[] signature = sign.sign();
