@@ -26,6 +26,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
 import crypto.AES;
+import crypto.RSA;
 import crypto.Shamir;
 import crypto.Shamir.Share;
 import client.Client;
@@ -173,7 +174,9 @@ public class ResourceStorage extends Client {
 			dout.writeInt(Client.SEND_SHARE);  //sendShare
 			dout.writeUTF(filename);
 			dout.writeInt(share.getX());
-			dout.writeUTF(share.getSum().toString());
+			byte[] send = RSA.encrypt(share.getSum().toByteArray(), anotherCert.getPublicKey());
+			dout.writeInt(send.length);
+			dout.write(send, 0, send.length);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -187,7 +190,10 @@ public class ResourceStorage extends Client {
 			dout.writeInt(Client.GET_SHARE);  //getShare
 			dout.writeUTF(filename);
 			int x = din.readInt();
-			BigInteger sum = new BigInteger(din.readUTF());
+			int length = din.readInt();
+			byte[] read = new byte[length];
+			din.read(read, 0, length);
+			BigInteger sum = new BigInteger(RSA.decrypt(read, privateKey));
 			share = new Share(x, sum);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

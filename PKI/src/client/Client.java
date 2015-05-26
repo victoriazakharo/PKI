@@ -8,6 +8,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Scanner;
 
+import crypto.RSA;
+
 public class Client {
 	public static int CA_PORT = 23, STORAGE_PORT = 640;
 	public static final int AUTHORIZE = 1, EXIT = 4, GET_FILE = 2, BREAK_CLIENT = 3,SEND_SHARE = 5, GET_SHARE = 6,
@@ -176,10 +178,29 @@ public class Client {
 	protected byte[] getBytesDecrypted() {
 		byte[] out=null;
 		try {
-		int length = din.readInt();
-		out = new byte[length];
-			din.read(out, 0, length);
-		} catch (IOException e) {
+			int length = din.readInt();
+			byte[] read = new byte[length];
+			din.read(read, 0, length);
+			length = din.readInt();
+			byte[] sign = new byte[length];
+			din.read(sign, 0, length);
+			
+			if(RSA.checkSignature(read, sign, anotherCert.getPublicKey())) {
+				System.out.println("Signature from client is valid.");
+				anotherCert.checkValidity();
+				System.out.println("Sertificate is up to date.");
+				storageDout.writeUTF(anotherCert.getSubjectDN().toString());
+				if(storageDin.readInt() == 0) {
+					System.out.println("Sertificate is withdrawn.");
+				} else {
+					System.out.println("Sertificate is ok.");
+					out = RSA.decrypt(read, privateKey);
+				}
+			}
+			else {
+				System.out.println("Signature from client is invalid.");
+			}		
+		} catch (IOException | CertificateExpiredException | CertificateNotYetValidException e) {
 			e.printStackTrace();
 		}
 		return out;

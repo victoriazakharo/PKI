@@ -174,8 +174,13 @@ public class ServerThread extends ClientThread{
 
 	private void sendBytesEncrypted(Integer clientId, byte[] bs) {
 		try {
-			dout.writeInt(bs.length);
-			dout.write(bs, 0, bs.length);
+			byte[] send = RSA.encrypt(bs, anotherCert.getPublicKey());
+			dout.writeInt(send.length);
+			dout.write(send, 0, send.length);
+			byte[] sign = RSA.sign(send, privateKey);
+			dout.writeInt(sign.length);
+			dout.write(sign, 0, sign.length);
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

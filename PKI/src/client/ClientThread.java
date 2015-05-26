@@ -1,7 +1,10 @@
 package client;
 
 import java.io.BufferedReader;
+
+import crypto.RSA;
 import crypto.Shamir.Share;
+
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -25,6 +28,8 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+
+import sun.security.util.BigInt;
 
 public class ClientThread extends Thread {
 	protected DataInputStream din, storageDin;
@@ -87,14 +92,18 @@ public class ClientThread extends Thread {
 			if(request == Client.SEND_SHARE){
 				String filename = din.readUTF();
 				int x = din.readInt();
-				String sum = din.readUTF();
-				writeToFile(filename,x,sum);
+				int length = din.readInt();
+				byte[] read = new byte[length];
+				din.read(read, 0, length);
+				writeToFile(filename,x,new BigInteger(RSA.decrypt(read,privateKey)).toString());
 			}
 			if(request == Client.GET_SHARE){
 				String filename = din.readUTF();
 				Share share = readFromFile(filename);
 				dout.writeInt(share.getX());
-				dout.writeUTF(share.getSum().toString());
+				byte[] send = RSA.encrypt(share.getSum().toByteArray(), anotherCert.getPublicKey());
+				dout.writeInt(send.length);
+				dout.write(send, 0, send.length);
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -200,8 +209,13 @@ public class ClientThread extends Thread {
 				if (str.substring(0, Integer.valueOf(str.indexOf(" "))).equals(
 						filename)) {
 					String[] parts = str.split(" ");
-					share = new Share(Integer.valueOf(parts[1]),new BigInteger(parts[2]));
-					break;
+					/*byte[] decr=null;
+					if(parts[2]!=null && !parts[2].equals(""))
+					decr= RSA.decrypt(new BigInteger(parts[2]).toByteArray(),privateKey);
+					if(decr!=null){*/
+						share = new Share(Integer.valueOf(parts[1]),new BigInteger(parts[2]));
+						break;
+					//}
 				}
 			}
 			fileReader.close();
