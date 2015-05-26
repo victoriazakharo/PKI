@@ -151,8 +151,11 @@ public class ServerThread extends ClientThread{
 			}
 			int needed = accessList.get(0);
 			Share[] shares = new Share[needed];
-			for (int i = 1; i < needed+1/* accessList.size() */; i++)
+			for (int i = 1; i < needed+1/* accessList.size() */; i++){
 				shares[i - 1] = resourceStorage.getShare(accessList.get(i),filename);
+				if(shares[i-1]==null)
+					return null;
+			}
 			BigInteger secret = Shamir.join(shares, prime, needed);
 
 			if (sign == -1) {

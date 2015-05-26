@@ -57,24 +57,27 @@ public class ResourceStorage extends Client {
     	}
 	}
 	
-	protected void connectToClient(Integer clientId) {
+	protected boolean connectToClient(Integer clientId) {
 		try {
 			socket = getSocket(clientId);
 			din = new DataInputStream(socket.getInputStream());
 			dout = new DataOutputStream(socket.getOutputStream());
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			return false;
 		} catch (IOException e) {
-			e.printStackTrace();
+			return false;
 		}
+		return true;
 	}
 	
-	public void initiateNewClientConnection(Integer clientId){
+	public boolean initiateNewClientConnection(Integer clientId){
 		int choice = AUTHORIZE;
 		if (choice == AUTHORIZE) {
-			connectToClient(clientId);
+			if(!connectToClient(clientId))
+				return false;
 			authorize();
 		}
+		return true;
 	}
 
 	
@@ -142,9 +145,8 @@ public class ResourceStorage extends Client {
 		return shares;
 	}
 	
-	public static Socket getSocket(Integer clientId) {
+	public static Socket getSocket(Integer clientId) throws UnknownHostException, IOException {
 		Socket sock = null;
-		try {
 			BufferedReader fileReader = new BufferedReader(new FileReader(
 					"resources\\clients.txt"));
 			String str;
@@ -161,10 +163,6 @@ public class ResourceStorage extends Client {
 			}
 			fileReader.close();
 			sock = new Socket(host, port);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		return sock;
 	}
 
@@ -186,7 +184,8 @@ public class ResourceStorage extends Client {
 	public Share getShare(Integer clientId,String filename) {
 		Share share = null;
 		try {
-			initiateNewClientConnection(clientId);
+			if(!initiateNewClientConnection(clientId))
+				return null;
 			dout.writeInt(Client.GET_SHARE);  //getShare
 			dout.writeUTF(filename);
 			int x = din.readInt();
