@@ -30,8 +30,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
-import sun.security.util.BigInt;
-
 public class ClientThread extends Thread {
 	protected DataInputStream din, storageDin;
 	protected DataOutputStream dout, storageDout;

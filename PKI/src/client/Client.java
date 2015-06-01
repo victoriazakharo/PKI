@@ -6,6 +6,7 @@ import java.security.*;
 import java.security.cert.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Scanner;
 
 import crypto.RSA;
@@ -13,7 +14,7 @@ import crypto.RSA;
 public class Client {
 	public static int CA_PORT = 23, STORAGE_PORT = 640;
 	public static final int AUTHORIZE = 1, EXIT = 4, GET_FILE = 2, BREAK_CLIENT = 3,SEND_SHARE = 5, GET_SHARE = 6,
-			CERTIFICATE_WRITTEN = -1, CERTIFICATE_DENIED = -2, SKIP = 0;
+			CERTIFICATE_WRITTEN = -1, CERTIFICATE_DENIED = -2, SKIP = 0, ASK_CERTIFICATE = 7;
 	protected int clientPort;
 	protected Scanner sc = new Scanner(System.in);
 	protected Socket socket, caSocket, storageSocket;
@@ -27,6 +28,7 @@ public class Client {
 	protected PrivateKey privateKey;
 	protected String distinguishedName, host, certName;
 	protected Signature sign;
+	protected PublicKey caPublicKey;
 
 	public Client() {
 		try {
@@ -62,13 +64,17 @@ public class Client {
 			caDout.writeUTF(certName);
 			int answer = caDin.readInt();
 			if (answer == CERTIFICATE_WRITTEN) {
-				readCertificate();
-				readPrivateKey();
+				int len = caDin.readInt();
+				byte[] publicKeyBytes = new byte[len];
+				caDin.readFully(publicKeyBytes, 0, len);
+		    	caPublicKey = KeyFactory.getInstance("RSA")
+		    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		    	readCertificateAndPrivateKey();
 			} else {
 				System.out.println("Certification request denied.");
 			}
 		} catch (IOException | CertificateException | InvalidKeySpecException
-				| NoSuchAlgorithmException e) {
+				| NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
 			e.printStackTrace();
 		}
 	}
@@ -129,10 +135,12 @@ public class Client {
 		int access = 0;
 		while (choice != EXIT) {
 			System.out.println(String.format(
-					"Enter\n%d to attach to some other client\n%d to exit.",
-					AUTHORIZE, EXIT));
+					"Enter\n%d to attach to some other client\n%d to ask certificate\n%d to exit.",
+					AUTHORIZE, ASK_CERTIFICATE, EXIT));
 			choice = Integer.valueOf(sc.nextLine());
-			if(choice == SKIP){
+			if(choice == ASK_CERTIFICATE) {
+				askCertificate();
+			} else if(choice == SKIP){
 				try {
 					Thread.sleep(20000);
 					continue;
@@ -283,31 +291,40 @@ public class Client {
 		return false;
 	}
 
-	public void readCertificate() throws IOException, CertificateException {
+	public void readCertificateAndPrivateKey() throws IOException, CertificateException,
+	NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
 		String id = String.format("%s %d", host, clientPort);
-		String file = String.format("D://cert%s.cer", id);
-		FileInputStream fis = new FileInputStream(file);
-		byte encodedCertificate[] = new byte[fis.available()];
-		fis.read(encodedCertificate);
-		ByteArrayInputStream bais = new ByteArrayInputStream(encodedCertificate);
-		cert = (X509Certificate) certFactory.generateCertificate(bais);
+		System.out.println("Enter path to certificate ");
+		String path = sc.nextLine();
+		String certFilename = String.format("%scert%s.cer", path, id),
+				keyFileName = String.format("%sprivate%s.key", path, id),
+				signFileName = String.format("%ssign%s.key", path, id);
+		FileInputStream fis = new FileInputStream(signFileName);
+		byte signature[] = new byte[fis.available()];
+		fis.read(signature);		
 		fis.close();
-	}
-
-	public void readPrivateKey() throws InvalidKeySpecException,
-			NoSuchAlgorithmException, IOException {
-		String id = String.format("%s %d", host, clientPort);
-		String file = String.format("D://private%s.key", id);
-		File filePrivateKey = new File(file);
-		FileInputStream fis = new FileInputStream(file);
-		byte[] encodedPrivateKey = new byte[(int) filePrivateKey.length()];
-		fis.read(encodedPrivateKey);
-		fis.close();
-
-		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-		PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
-				encodedPrivateKey);
-		privateKey = keyFactory.generatePrivate(privateKeySpec);
+		sign.initVerify(caPublicKey);
+		sign.update(distinguishedName.getBytes());
+		if(sign.verify(signature)) {		
+			fis = new FileInputStream(certFilename);
+			byte encodedCertificate[] = new byte[fis.available()];
+			fis.read(encodedCertificate);
+			ByteArrayInputStream bais = new ByteArrayInputStream(encodedCertificate);
+			cert = (X509Certificate) certFactory.generateCertificate(bais);
+			fis.close();
+			
+			fis = new FileInputStream(keyFileName);
+			byte[] encodedPrivateKey = new byte[(int)new File(keyFileName).length()];
+			fis.read(encodedPrivateKey);
+			fis.close();
+	
+			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+			PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
+					encodedPrivateKey);
+			privateKey = keyFactory.generatePrivate(privateKeySpec);
+		} else {
+			System.out.println("Source not trusted. Private key and certificate are not received.");
+		}
 	}
 
 	protected String getDistinguishedName() {

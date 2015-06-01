@@ -20,7 +20,7 @@ public class ClientThread extends Thread {
         this.ca = ca;
 	}
 	
-	public void SaveKeyPair(KeyPair keyPair, String id) throws IOException {
+	public void SaveKeyPair(KeyPair keyPair, String id, String dn) throws IOException {
 		PrivateKey privateKey = keyPair.getPrivate();
 		PublicKey publicKey = keyPair.getPublic();
  
@@ -38,6 +38,20 @@ public class ClientThread extends Thread {
 		fos = new FileOutputStream("D://private" + id + ".key");
 		fos.write(pkcs8EncodedKeySpec.getEncoded());
 		fos.close();
+		
+		fos = new FileOutputStream("D://sign" + id + ".key");
+		Signature signature;
+		try {
+			signature = Signature.getInstance("MD5WithRSA");
+			signature.initSign(ca.getPrivateKey(), new SecureRandom());
+			byte[] message = dn.getBytes();
+			signature.update(message);
+			byte[] sigBytes = signature.sign();
+			fos.write(sigBytes);
+		} catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {			
+			e.printStackTrace();
+		}		
+		fos.close();
 	}
 	
 	public void run() {
@@ -52,7 +66,7 @@ public class ClientThread extends Thread {
 				if(answer.equals("yes")) {
 					 pair = RSA.generateKeyPair();
 					try {
-						SaveKeyPair(pair, certID);						
+						SaveKeyPair(pair, certID, dn);						
 					} catch (IOException e1) {					
 						e1.printStackTrace();
 					}
@@ -66,6 +80,10 @@ public class ClientThread extends Thread {
 						e.printStackTrace();
 					}	
 					dout.writeInt(client.Client.CERTIFICATE_WRITTEN);
+					byte[] publicKeyBytes = ca.getPublicKey().getEncoded();
+					dout.writeInt(publicKeyBytes.length);				
+					dout.write(publicKeyBytes, 0, publicKeyBytes.length);
+					System.out.println("CA passed public key to client.");
 				} else {
 					dout.writeInt(client.Client.CERTIFICATE_DENIED);
 				}

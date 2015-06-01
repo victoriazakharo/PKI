@@ -25,9 +25,16 @@ public class CA {
 	private X500Name issuer;
 	private ServerSocket storageSocket, clientSocket;
 	private StorageThread storageThread;
-	private PrivateKey privateKey;	
+	private PrivateKey privateKey;
+	
 	public PrivateKey getPrivateKey() {
 		return privateKey;
+	}
+	
+	private PublicKey publicKey;
+	
+	public PublicKey getPublicKey() {
+		return publicKey;
 	}
 
 	private Scanner sc = new Scanner(System.in);	
@@ -90,6 +97,7 @@ public class CA {
 		    input.close();
 		    privateKey = (PrivateKey) keyStore.getKey(CA_ALIAS, caPass.toCharArray());
 		    java.security.cert.Certificate caCert = keyStore.getCertificate(CA_ALIAS);
+		    publicKey = caCert.getPublicKey();
 		    byte[] encoded = caCert.getEncoded();
 		    X509CertImpl caCertImpl = new X509CertImpl(encoded);
 		    X509CertInfo caCertInfo = (X509CertInfo) caCertImpl.get(X509CertImpl.NAME + "."
