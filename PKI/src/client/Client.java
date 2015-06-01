@@ -13,7 +13,7 @@ import crypto.RSA;
 public class Client {
 	public static int CA_PORT = 23, STORAGE_PORT = 640;
 	public static final int AUTHORIZE = 1, EXIT = 4, GET_FILE = 2, BREAK_CLIENT = 3,SEND_SHARE = 5, GET_SHARE = 6,
-			CERTIFICATE_WRITTEN = -1, CERTIFICATE_DENIED = -2;
+			CERTIFICATE_WRITTEN = -1, CERTIFICATE_DENIED = -2, SKIP = 0;
 	protected int clientPort;
 	protected Scanner sc = new Scanner(System.in);
 	protected Socket socket, caSocket, storageSocket;
@@ -132,6 +132,15 @@ public class Client {
 					"Enter\n%d to attach to some other client\n%d to exit.",
 					AUTHORIZE, EXIT));
 			choice = Integer.valueOf(sc.nextLine());
+			if(choice == SKIP){
+				try {
+					Thread.sleep(20000);
+					continue;
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			if (choice == AUTHORIZE) {
 				connectToClient();
 				authorize();
@@ -148,6 +157,15 @@ public class Client {
 							BREAK_CLIENT, GET_FILE));
 					choice = sc.nextInt();
 					// add your commands for sharing keys
+					if(choice == SKIP){
+						try {
+							Thread.sleep(20000);
+							continue;
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 					try {
 						if (choice == GET_FILE) {
 							dout.writeInt(GET_FILE);

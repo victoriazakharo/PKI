@@ -103,7 +103,7 @@ public class ClientThread extends Thread {
 				String filename = din.readUTF();
 				int id = din.readInt();
 				System.out.println("Do you want to send your share of the secret for file "+filename+
-						" to client with id "+id+"? 1 - yes, 0 - no");
+						" to client with id "+id+"? If it's not your id input 0 before your answer. 1 - yes, 0 - no");
 				int allow = Integer.valueOf(sc.nextLine());
 				dout.writeInt(allow);
 				if(allow==1){
