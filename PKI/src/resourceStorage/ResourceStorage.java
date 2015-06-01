@@ -181,19 +181,23 @@ public class ResourceStorage extends Client {
 		// TODO Cipher and Sign
 	}
 	
-	public Share getShare(Integer clientId,String filename) {
+	public Share getShare(Integer clientId,String filename, Integer clientResId) {
 		Share share = null;
 		try {
 			if(!initiateNewClientConnection(clientId))
 				return null;
 			dout.writeInt(Client.GET_SHARE);  //getShare
 			dout.writeUTF(filename);
+			dout.writeInt(clientResId);
+			int allow = din.readInt();
+			if(allow == 1){
 			int x = din.readInt();
 			int length = din.readInt();
 			byte[] read = new byte[length];
 			din.read(read, 0, length);
 			BigInteger sum = new BigInteger(RSA.decrypt(read, privateKey));
 			share = new Share(x, sum);
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

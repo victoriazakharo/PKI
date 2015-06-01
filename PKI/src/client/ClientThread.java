@@ -28,6 +28,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Scanner;
 
 import sun.security.util.BigInt;
 
@@ -98,12 +99,20 @@ public class ClientThread extends Thread {
 				writeToFile(filename,x,new BigInteger(RSA.decrypt(read,privateKey)).toString());
 			}
 			if(request == Client.GET_SHARE){
+				Scanner sc = new Scanner(System.in);
 				String filename = din.readUTF();
+				int id = din.readInt();
+				System.out.println("Do you want to send your share of the secret for file "+filename+
+						" to client with id "+id+"? 1 - yes, 0 - no");
+				int allow = Integer.valueOf(sc.nextLine());
+				dout.writeInt(allow);
+				if(allow==1){
 				Share share = readFromFile(filename);
 				dout.writeInt(share.getX());
 				byte[] send = RSA.encrypt(share.getSum().toByteArray(), anotherCert.getPublicKey());
 				dout.writeInt(send.length);
 				dout.write(send, 0, send.length);
+				}
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

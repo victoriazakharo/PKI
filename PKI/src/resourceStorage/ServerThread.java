@@ -152,7 +152,7 @@ public class ServerThread extends ClientThread{
 			int needed = accessList.get(0);
 			Share[] shares = new Share[needed];
 			for (int i = 1; i < needed+1/* accessList.size() */; i++){
-				shares[i - 1] = resourceStorage.getShare(accessList.get(i),filename);
+				shares[i - 1] = resourceStorage.getShare(accessList.get(i),filename,clientResId);
 				if(shares[i-1]==null)
 					return null;
 			}
