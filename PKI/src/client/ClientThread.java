@@ -40,6 +40,9 @@ public class ClientThread extends Thread {
 	protected Signature sign;
 	protected Socket storageSocket; 
 	protected int  port;
+	protected ClientFrame frame;
+	public boolean answerReady = false;
+	public int answer=0;
 	
 	public ClientThread(Socket s, X509Certificate cert, PrivateKey privateKey) {
 		this.cert = cert;		
@@ -55,6 +58,16 @@ public class ClientThread extends Thread {
 		} catch (IOException | NoSuchAlgorithmException e) {			
 			e.printStackTrace();
 		}		
+	}
+	
+	protected void initFrame(){
+		answerReady = false;
+		frame = new ClientFrame(this);
+		frame.setVisible(true); 
+	}
+	
+	public void setAnswerReady() {
+		answerReady = true;
 	}
 	
 	public void run() {	
@@ -103,8 +116,15 @@ public class ClientThread extends Thread {
 				String filename = din.readUTF();
 				int id = din.readInt();
 				System.out.println("Do you want to send your share of the secret for file "+filename+
-						" to client with id "+id+"? If it's not your id input 0 before your answer. 1 - yes, 0 - no");
-				int allow = Integer.valueOf(sc.nextLine());
+						" to client with id "+id+"? 1 - yes, 0 - no");
+				initFrame();
+				while(!answerReady){try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}}
+				int allow = answer;
 				dout.writeInt(allow);
 				if(allow==1){
 				Share share = readFromFile(filename);
