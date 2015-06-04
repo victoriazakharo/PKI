@@ -48,7 +48,21 @@ public class Client {
 			e.printStackTrace();
 			return;
 		}
-		askCertificate();
+		System.out.println("Input path to certificate:");
+		String path = sc.nextLine();
+		System.out.println("Input 1 - to ask a new certificate, 2 to use the old one:");
+		int choice = Integer.valueOf(sc.nextLine());
+		if(choice == 1)
+			askCertificate(path);
+		else
+			try {
+				readCertificateAndPrivateKey(path);
+			} catch (InvalidKeyException | CertificateException
+					| NoSuchAlgorithmException | InvalidKeySpecException
+					| SignatureException | IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		initiateThread();
 	}
 	
@@ -399,7 +413,7 @@ public class Client {
 				System.out.println("Signature from client is valid.");
 				anotherCert.checkValidity();
 				System.out.println("Sertificate is up to date.");
-				storageDout.writeUTF(distinguishedName);							
+				storageDout.writeUTF(anotherCert.getSubjectDN().toString());							
 				if (storageDin.readInt() == 0) {
 					System.out.println("Sertificate is withdrawn.");
 					return false;

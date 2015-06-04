@@ -121,7 +121,7 @@ public class Storage {
 		    		keyStore.setCertificateEntry(cert.getSubjectDN().toString(), cert);
 		    		File keystoreFile = new File(KEYSTORE_FILE);
 		    		FileOutputStream out = new FileOutputStream(keystoreFile);
-		    	    keyStore.store(out, generateRandomPassword());
+		    	    keyStore.store(out, "capassword".toCharArray());
 		    	    out.close();
 		    	}
 		    	
