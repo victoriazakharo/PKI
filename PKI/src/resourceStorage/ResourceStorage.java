@@ -188,7 +188,8 @@ public class ResourceStorage extends Client {
 				return null;
 			dout.writeInt(Client.GET_SHARE);  //getShare
 			dout.writeUTF(filename);
-			dout.writeInt(clientResId);
+			dout.writeUTF(getClientHost(clientResId));
+			dout.writeInt(getClientPort(clientResId));
 			int allow = din.readInt();
 			if(allow == 1){
 			int x = din.readInt();
@@ -252,6 +253,44 @@ public class ResourceStorage extends Client {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public int getClientPort(Integer id){
+		try {
+			BufferedReader fileReader = new BufferedReader(new FileReader(
+					"resources\\clients.txt"));
+			String str;
+			while ((str = fileReader.readLine()) != null) {
+				String[] parts = str.split(" ");
+				if (Integer.valueOf(parts[0]).equals(id) ) {
+					return Integer.valueOf(parts[2]);
+				}
+			}
+			fileReader.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return -1;
+	}
+	
+	public String getClientHost(Integer id){
+		try {
+			BufferedReader fileReader = new BufferedReader(new FileReader(
+					"resources\\clients.txt"));
+			String str;
+			while ((str = fileReader.readLine()) != null) {
+				String[] parts = str.split(" ");
+				if (Integer.valueOf(parts[0]).equals(id) ) {
+					return parts[1];
+				}
+			}
+			fileReader.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return "";
 	}
 
 

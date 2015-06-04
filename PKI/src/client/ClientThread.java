@@ -30,6 +30,8 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
+import javax.swing.JFrame;
+
 public class ClientThread extends Thread {
 	protected DataInputStream din, storageDin;
 	protected DataOutputStream dout, storageDout;
@@ -37,10 +39,11 @@ public class ClientThread extends Thread {
 	protected PrivateKey privateKey;	
 	protected Signature sign;
 	protected Socket storageSocket; 
-	protected int  port;
+	public int  port;
+	public String host;
 	protected ClientFrame frame;
-	public boolean answerReady = false;
-	public int answer=0;
+	public Boolean answerReady = false;
+	public Integer answer=0;
 	
 	public ClientThread(Socket s, X509Certificate cert, PrivateKey privateKey) {
 		this.cert = cert;		
@@ -50,6 +53,7 @@ public class ClientThread extends Thread {
 			dout = new DataOutputStream(s.getOutputStream());
 			din = new DataInputStream(s.getInputStream());	
 			port = s.getLocalPort();
+			host = s.getLocalAddress().toString();
 			storageSocket = new Socket(Client.STORAGE_HOST, Client.STORAGE_PORT);
 			storageDin = new DataInputStream(storageSocket.getInputStream());
 			storageDout =  new DataOutputStream(storageSocket.getOutputStream());
@@ -58,9 +62,8 @@ public class ClientThread extends Thread {
 		}		
 	}
 	
-	protected void initFrame(){
-		answerReady = false;
-		frame = new ClientFrame(this);
+	protected void initFrame(String filename,String host,int port){
+		frame = new ClientFrame(this,filename,host,port);
 		frame.setVisible(true); 
 	}
 	
@@ -111,27 +114,13 @@ public class ClientThread extends Thread {
 				writeToFile(filename,x,new BigInteger(RSA.decrypt(read,privateKey)).toString());
 			}
 			if(request == Client.GET_SHARE){
-				Scanner sc = new Scanner(System.in);
 				String filename = din.readUTF();
-				int id = din.readInt();
-				System.out.println("Do you want to send your share of the secret for file "+filename+
-						" to client with id "+id+"? 1 - yes, 0 - no");
-				/*initFrame();
-				while(!answerReady){try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}}*/
-				int allow = sc.nextInt();
-				dout.writeInt(allow);
-				if(allow==1){
-				Share share = readFromFile(filename);
-				dout.writeInt(share.getX());
-				byte[] send = RSA.encrypt(share.getSum().toByteArray(), anotherCert.getPublicKey());
-				dout.writeInt(send.length);
-				dout.write(send, 0, send.length);
-				}
+				String host = din.readUTF();
+				int port = din.readInt();
+				if(port == this.port /*&& host.equals(this.host)*/)
+					sendingShare(1, filename);
+				else
+					initFrame(filename,host,port);
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -226,7 +215,7 @@ public class ClientThread extends Thread {
 		}
 	}
 	
-	protected Share readFromFile(String filename){
+	public  Share readFromFile(String filename){
 		Share share = null;
 		try {
 			BufferedReader fileReader = new BufferedReader(new FileReader(
@@ -237,10 +226,6 @@ public class ClientThread extends Thread {
 				if (str.substring(0, Integer.valueOf(str.indexOf(" "))).equals(
 						filename)) {
 					String[] parts = str.split(" ");
-					/*byte[] decr=null;
-					if(parts[2]!=null && !parts[2].equals(""))
-					decr= RSA.decrypt(new BigInteger(parts[2]).toByteArray(),privateKey);
-					if(decr!=null){*/
 						share = new Share(Integer.valueOf(parts[1]),new BigInteger(parts[2]));
 						break;
 					//}
@@ -252,6 +237,17 @@ public class ClientThread extends Thread {
 			e.printStackTrace();
 		}
 		return share;
+	}
+	
+	public void sendingShare(int allow,String filename) throws IOException{
+		dout.writeInt(allow);
+		if(allow==1){
+		Share share = readFromFile(filename);
+		dout.writeInt(share.getX());
+		byte[] send = RSA.encrypt(share.getSum().toByteArray(), anotherCert.getPublicKey());
+		dout.writeInt(send.length);
+		dout.write(send, 0, send.length);
+		}
 	}
 
 }
