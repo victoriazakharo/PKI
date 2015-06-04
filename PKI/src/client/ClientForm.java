@@ -17,11 +17,17 @@ import javax.swing.JTextField;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 
 public class ClientForm extends JFrame {
 
@@ -97,6 +103,7 @@ public class ClientForm extends JFrame {
 			return false;
 		}
 	}
+	
 	public Set<ClientFile> getFiles()
 	{
 		return this.clientFiles;
@@ -129,6 +136,31 @@ public class ClientForm extends JFrame {
 		}
 	}
 	
+	private boolean readCertificateAndKeys(String path){
+		hasCertificate=false;
+		this.client.setDistinguishedName(CNField.getText(), OUField.getText(), OField.getText(), LField.getText(), SField.getText(), CField.getText());
+		
+		try 
+		{
+			hasCertificate=client.readCertificateAndPrivateKey(path);
+			if(hasCertificate)
+			{
+				JOptionPane.showMessageDialog(rootPane, "Сертификат считан.");
+				hasCertificate=true;
+				client.initiateThread();
+			}
+			else
+			{
+				JOptionPane.showMessageDialog(rootPane, "Сертификат не считан.");
+			}
+		} 
+		catch (InvalidKeyException | CertificateException | NoSuchAlgorithmException | InvalidKeySpecException | SignatureException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return hasCertificate;
+	}
 	public ClientForm(Client client, String host, String port) {
 		addWindowListener(new WindowAdapter() {
 			@Override
@@ -147,7 +179,7 @@ public class ClientForm extends JFrame {
 		this.setTitle("Клиент(хост: "+host+"; порт:"+port+")");
 		hasCertificate=false;
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setBounds(100, 100, 504, 307);
+		setBounds(100, 100, 504, 342);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -191,6 +223,12 @@ public class ClientForm extends JFrame {
 					btnNewButton.setEnabled(true);
 					fileField.setEnabled(true);
 				}
+				else
+				{
+					lblNewLabel_7.setEnabled(false);
+					btnNewButton.setEnabled(false);
+					fileField.setEnabled(false);
+				}
 			}
 		});
 		final JLabel lblNewLabel_6 = new JLabel("\u041D\u043E\u043C\u0435\u0440 \u0445\u043E\u0441\u0442\u0430");
@@ -212,6 +250,18 @@ public class ClientForm extends JFrame {
 					PortField.setEnabled(true);
 					lblNewLabel_6.setEnabled(true);
 					lblNewLabel_8.setEnabled(true);
+				}
+				else
+				{
+					certificateResultLabel.setText("Сертификат не получен.");
+					attachButton.setEnabled(false);
+					HostField.setEnabled(false);
+					PortField.setEnabled(false);
+					lblNewLabel_6.setEnabled(false);
+					lblNewLabel_7.setEnabled(false);
+					lblNewLabel_8.setEnabled(false);
+					fileField.setEditable(false);
+					btnNewButton.setEnabled(false);
 				}
 			}
 		});
@@ -250,6 +300,35 @@ public class ClientForm extends JFrame {
 		
 		FileField = new JTextField();
 		FileField.setColumns(10);
+		
+		JButton loadCertificateButton = new JButton("\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0441\u0435\u0440\u0442\u0438\u0444\u0438\u043A\u0430\u0442");
+		loadCertificateButton.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				boolean result=readCertificateAndKeys(FileField.getText());
+				if(result)
+				{
+					certificateResultLabel.setText("Сертификат получен.");
+					attachButton.setEnabled(true);
+					HostField.setEnabled(true);
+					PortField.setEnabled(true);
+					lblNewLabel_6.setEnabled(true);
+					lblNewLabel_8.setEnabled(true);
+				}
+				else
+				{
+					certificateResultLabel.setText("Сертификат не получен.");
+					attachButton.setEnabled(false);
+					HostField.setEnabled(false);
+					PortField.setEnabled(false);
+					lblNewLabel_6.setEnabled(false);
+					lblNewLabel_7.setEnabled(false);
+					lblNewLabel_8.setEnabled(false);
+					fileField.setEditable(false);
+					btnNewButton.setEnabled(false);
+				}
+			}
+		});
 		
 				
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
@@ -306,8 +385,10 @@ public class ClientForm extends JFrame {
 							.addPreferredGap(ComponentPlacement.RELATED)))
 					.addGap(84))
 				.addGroup(gl_contentPane.createSequentialGroup()
-					.addComponent(certificateButton)
-					.addContainerGap(333, Short.MAX_VALUE))
+					.addGroup(gl_contentPane.createParallelGroup(Alignment.TRAILING, false)
+						.addComponent(certificateButton, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(loadCertificateButton, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+					.addContainerGap())
 		);
 		gl_contentPane.setVerticalGroup(
 			gl_contentPane.createParallelGroup(Alignment.TRAILING)
@@ -358,7 +439,8 @@ public class ClientForm extends JFrame {
 					.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
 						.addComponent(certificateButton)
 						.addComponent(btnNewButton))
-					.addGap(6))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(loadCertificateButton))
 		);
 		contentPane.setLayout(gl_contentPane);		this.client=client;
 	}

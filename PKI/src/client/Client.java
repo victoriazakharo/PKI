@@ -79,7 +79,7 @@ public class Client {
 				privateKey);
 		serverThread.start();
 	}
-
+	
 	public void askCertificate() {
 		try {
 			caDout.writeUTF(distinguishedName);
@@ -131,6 +131,7 @@ public class Client {
 			e.printStackTrace();
 		}
 	}
+	
 	
 	protected void initServerSocket() {
 		System.out.println("Enter host.");
@@ -247,6 +248,7 @@ public class Client {
 		}
 		return authorized;
 	}
+	
 	protected void writeHostAndPort(){
 		try {
 			dout.writeUTF(host);
@@ -256,6 +258,7 @@ public class Client {
 			e1.printStackTrace();
 		}
 	}
+	
 	public void start() {
 		int choice = AUTHORIZE;
 		String filename;
@@ -326,7 +329,6 @@ public class Client {
 		}
 
 	}
-	
 	
 	protected byte[] getBytesDecrypted() {
 		byte[] out=null;
@@ -462,7 +464,7 @@ public class Client {
 		}
 	}
 
-	public void readCertificateAndPrivateKey(String path) throws IOException, CertificateException,
+	public boolean readCertificateAndPrivateKey(String path) throws IOException, CertificateException,
 	NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
 		String id = String.format("%s %d", host, clientPort);
 		String certFilename = String.format("%scert%s.cer", path, id),
@@ -498,8 +500,10 @@ public class Client {
 			PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
 					encodedPrivateKey);
 			privateKey = keyFactory.generatePrivate(privateKeySpec);
+			return true;
 		} else {
-			System.out.println("Source not trusted. Private key and certificate are not received.");
+			return false;
+			//System.out.println("Source not trusted. Private key and certificate are not received.");
 		}
 	}
 
