@@ -52,6 +52,28 @@ public class Client {
 		initiateThread();
 	}
 	
+	public Client(String host, String port) {
+		try {
+			sign = Signature.getInstance("MD5WithRSA");
+			certFactory = CertificateFactory.getInstance("X.509");
+			storageSocket = new Socket(STORAGE_HOST, STORAGE_PORT);
+			storageDin = new DataInputStream(storageSocket.getInputStream());
+			storageDout = new DataOutputStream(storageSocket.getOutputStream());			
+			initServerSocket(host, port);
+			
+			caSocket = new Socket(CA_HOST, CA_PORT);
+			caDin = new DataInputStream(caSocket.getInputStream());
+			caDout = new DataOutputStream(caSocket.getOutputStream());
+			
+			//distinguishedName = getDistinguishedName();
+		} catch (IOException | CertificateException | NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			return;
+		}
+		//askCertificate();
+		//initiateThread();
+	}
+	
 	protected void initiateThread() {
 		ServerThread serverThread = new ServerThread(serverSocket, cert,
 				privateKey);
@@ -69,6 +91,11 @@ public class Client {
 				caDin.readFully(publicKeyBytes, 0, len);
 		    	caPublicKey = KeyFactory.getInstance("RSA")
 		    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		    	X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(
+		    			publicKeyBytes);
+		    	FileOutputStream fos = new FileOutputStream("D://publicCA" + certName + ".key");
+				fos.write(x509EncodedKeySpec.getEncoded());
+				fos.close();
 		    	readCertificateAndPrivateKey();
 			} else {
 				System.out.println("Certification request denied.");
@@ -79,12 +106,49 @@ public class Client {
 		}
 	}
 
+	public void askCertificate(String path) {
+		try {
+			caDout.writeUTF(distinguishedName);
+			caDout.writeUTF(certName);
+			int answer = caDin.readInt();
+			if (answer == CERTIFICATE_WRITTEN) {
+				int len = caDin.readInt();
+				byte[] publicKeyBytes = new byte[len];
+				caDin.readFully(publicKeyBytes, 0, len);
+		    	caPublicKey = KeyFactory.getInstance("RSA")
+		    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		    	X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(
+		    			publicKeyBytes);
+				FileOutputStream fos = new FileOutputStream("D://publicCA" + certName + ".key");
+				fos.write(x509EncodedKeySpec.getEncoded());
+				fos.close();
+		    	readCertificateAndPrivateKey(path);
+			} else {
+				System.out.println("Certification request denied.");
+			}
+		} catch (IOException | CertificateException | InvalidKeySpecException
+				| NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	protected void initServerSocket() {
 		System.out.println("Enter host.");
 		host = sc.nextLine();
 		System.out.println("Enter port number.");
 		clientPort = Integer.valueOf(sc.nextLine());
 		certName = String.format("%s %d", host, clientPort);
+		try {
+			serverSocket = new ServerSocket(clientPort);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	protected void initServerSocket(String host, String port) {
+		this.host = host;
+		this.clientPort = Integer.valueOf(port);
+		certName = String.format("%s %d", this.host, this.clientPort);
 		try {
 			serverSocket = new ServerSocket(clientPort);
 		} catch (IOException e) {
@@ -108,6 +172,41 @@ public class Client {
 		}
 	}
 
+	protected void connectToClient(String hostString, String portString) {
+		String host = hostString;
+		int port = Integer.valueOf(portString);
+		try {
+			socket = new Socket(host, port);
+			din = new DataInputStream(socket.getInputStream());
+			dout = new DataOutputStream(socket.getOutputStream());
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected String getFile(String filename)
+	{
+		int access=0;
+		try {
+			dout.writeInt(GET_FILE);
+			//dout.writeUTF(host);
+			//dout.writeInt(clientPort);
+			//dout.writeInt(GET_FILE);
+			dout.writeUTF(filename);
+			access = din.readInt();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//System.out.println("Access:"+access);
+		if(access==0)
+			return "";
+		String content= new String(getBytesDecrypted());
+		return content;
+	}
+	
 	protected void authorize() {
 		boolean accepted = false, authorized = false;
 		try {
@@ -129,6 +228,34 @@ public class Client {
 				.println(authorized ? "Authorized." : "Authorization failed.");
 	}
 
+	protected boolean authorizeClient() {
+		boolean accepted = false, authorized = false;
+		try {
+			dout.writeInt(AUTHORIZE);
+			accepted = acceptDataForAuthorization();
+			dout.writeBoolean(accepted);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if (accepted) {
+			firstClientAuthorization();
+			try {
+				authorized = din.readBoolean();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return authorized;
+	}
+	protected void writeHostAndPort(){
+		try {
+			dout.writeUTF(host);
+			dout.writeInt(clientPort);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
 	public void start() {
 		int choice = AUTHORIZE;
 		String filename;
@@ -303,6 +430,55 @@ public class Client {
 		byte signature[] = new byte[fis.available()];
 		fis.read(signature);		
 		fis.close();
+		
+		fis = new FileInputStream(String.format("D://publicCA" + certName + ".key"));
+		byte publicKeyBytes[] = new byte[fis.available()];
+		fis.read(publicKeyBytes);		
+		fis.close();
+		caPublicKey = KeyFactory.getInstance("RSA")
+    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		
+		sign.initVerify(caPublicKey);
+		sign.update(distinguishedName.getBytes());
+		if(sign.verify(signature)) {		
+			fis = new FileInputStream(certFilename);
+			byte encodedCertificate[] = new byte[fis.available()];
+			fis.read(encodedCertificate);
+			ByteArrayInputStream bais = new ByteArrayInputStream(encodedCertificate);
+			cert = (X509Certificate) certFactory.generateCertificate(bais);
+			fis.close();
+			
+			fis = new FileInputStream(keyFileName);
+			byte[] encodedPrivateKey = new byte[(int)new File(keyFileName).length()];
+			fis.read(encodedPrivateKey);
+			fis.close();
+	
+			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+			PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
+					encodedPrivateKey);
+			privateKey = keyFactory.generatePrivate(privateKeySpec);
+		} else {
+			System.out.println("Source not trusted. Private key and certificate are not received.");
+		}
+	}
+
+	public void readCertificateAndPrivateKey(String path) throws IOException, CertificateException,
+	NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
+		String id = String.format("%s %d", host, clientPort);
+		String certFilename = String.format("%scert%s.cer", path, id),
+				keyFileName = String.format("%sprivate%s.key", path, id),
+				signFileName = String.format("%ssign%s.key", path, id);
+		FileInputStream fis = new FileInputStream(signFileName);
+		byte signature[] = new byte[fis.available()];
+		fis.read(signature);		
+		fis.close();
+		fis = new FileInputStream(String.format("D://publicCA" + certName + ".key"));
+		byte publicKeyBytes[] = new byte[fis.available()];
+		fis.read(publicKeyBytes);		
+		fis.close();
+		caPublicKey = KeyFactory.getInstance("RSA")
+    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		
 		sign.initVerify(caPublicKey);
 		sign.update(distinguishedName.getBytes());
 		if(sign.verify(signature)) {		
@@ -345,6 +521,11 @@ public class Client {
 				O, L, ST, C);
 	}
 
+	protected void setDistinguishedName(String CN, String OU,String O,String L,String ST,String C) {
+		this.distinguishedName= String.format("CN=%s, OU=%s, O=%s, L=%s, ST=%s, C=%s", CN, OU,
+				O, L, ST, C);
+	}
+	
 	public static void main(String[] args) {
 		Client client = new Client();
 		client.start();
