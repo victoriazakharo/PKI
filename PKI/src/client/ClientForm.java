@@ -97,6 +97,10 @@ public class ClientForm extends JFrame {
 			return false;
 		}
 	}
+	public Set<ClientFile> getFiles()
+	{
+		return this.clientFiles;
+	}
 	
 	private void getFile(String fileName)
 	{
@@ -106,7 +110,7 @@ public class ClientForm extends JFrame {
 			result="Отказано в доступе.";
 		}
 		boolean adding=true;
-		ClientFile clientfile=new ClientFile(fileName, result);
+		ClientFile clientfile=new ClientFile(this, fileName, result);
 		for(ClientFile file: clientFiles)
 		{
 			if(file.contentEquals(fileName, result))
