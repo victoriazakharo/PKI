@@ -1,8 +1,5 @@
 package client;
 
-import java.awt.BorderLayout;
-import java.awt.EventQueue;
-
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
@@ -10,21 +7,12 @@ import javax.swing.JButton;
 import javax.swing.JTextField;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
-import javax.swing.JTextPane;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.JLabel;
-import javax.swing.JPasswordField;
-
-import crypto.RSA;
-import crypto.Shamir.Share;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.security.PublicKey;
 
 public class ClientFrame extends JFrame {
 
@@ -61,8 +49,7 @@ public class ClientFrame extends JFrame {
 				}
 				try {
 					ClientFrame.this.clientThread.sendingShare(allow, ClientFrame.this.filename);
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
+				} catch (IOException e1) {					
 					e1.printStackTrace();
 				}
 				ClientFrame.this.dispose();

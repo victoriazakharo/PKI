@@ -84,14 +84,11 @@ public class ResourceStorage extends Client {
 	private void getAccessMap() {
 		try {
 			BufferedReader accessReader = new BufferedReader(new FileReader(
-					"resources//access.txt"));
-			int index = 0;
+					"resources//access.txt"));			
 			String str;
-			accessMap = new HashMap<String, List<List<Integer>>>();
-			int size;
+			accessMap = new HashMap<String, List<List<Integer>>>();			
 			String filename;
-			while ((str = accessReader.readLine()) != null) {
-				size = str.length();
+			while ((str = accessReader.readLine()) != null) {				
 				filename = str.substring(0, str.indexOf(" "));
 				Matcher m = Pattern.compile("\\(([^)]+)\\)").matcher(str);
 				List<List<Integer>> list = new ArrayList<List<Integer>>();
@@ -199,8 +196,7 @@ public class ResourceStorage extends Client {
 			BigInteger sum = new BigInteger(RSA.decrypt(read, privateKey));
 			share = new Share(x, sum);
 			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {		
 			e.printStackTrace();
 		}
 		return share;
@@ -240,8 +236,8 @@ public class ResourceStorage extends Client {
 			e.printStackTrace();
 		}
 	}
-
-	private void decryptFile(String filename, SecretKey aesKey,
+	
+	/*private void decryptFile(String filename, SecretKey aesKey,
 			BigInteger initVector) {
 		try {
 			byte[] content = Files.readAllBytes(Paths
@@ -253,7 +249,7 @@ public class ResourceStorage extends Client {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
+	}*/
 	
 	public int getClientPort(Integer id){
 		try {
@@ -267,8 +263,7 @@ public class ResourceStorage extends Client {
 				}
 			}
 			fileReader.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {		
 			e.printStackTrace();
 		}
 		return -1;
@@ -286,8 +281,7 @@ public class ResourceStorage extends Client {
 				}
 			}
 			fileReader.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {		
 			e.printStackTrace();
 		}
 		return "";

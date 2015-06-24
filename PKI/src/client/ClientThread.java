@@ -28,9 +28,6 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Scanner;
-
-import javax.swing.JFrame;
 
 public class ClientThread extends Thread {
 	protected DataInputStream din, storageDin;
@@ -122,8 +119,7 @@ public class ClientThread extends Thread {
 				else
 					initFrame(filename,host,port);
 			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {			
 			e.printStackTrace();
 		}
 		
@@ -232,8 +228,7 @@ public class ClientThread extends Thread {
 				}
 			}
 			fileReader.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {			
 			e.printStackTrace();
 		}
 		return share;
@@ -249,5 +244,4 @@ public class ClientThread extends Thread {
 		dout.write(send, 0, send.length);
 		}
 	}
-
 }

@@ -40,7 +40,6 @@ import crypto.Shamir.Share;
 public class ServerThread extends ClientThread{
 	private DataInputStream din;
 	private DataOutputStream dout;
-	private X509Certificate thisCert;
 	private PrivateKey privateKey;
 	private ResourceStorage resourceStorage;;
 	private Integer clientResId;
@@ -48,8 +47,7 @@ public class ServerThread extends ClientThread{
 	
 	
 	public ServerThread(Socket s, X509Certificate thisCert, PrivateKey privateKey, HashMap<String, List<List<Integer>>> accessMap, ResourceStorage rs){
-		super(s, thisCert, privateKey);
-		this.thisCert = thisCert;
+		super(s, thisCert, privateKey);		
 		this.privateKey = privateKey;
 		resourceStorage = rs;
 		this.accessMap = accessMap;
@@ -65,8 +63,7 @@ public class ServerThread extends ClientThread{
 	protected void getHostAndPort() {
 		try {
 			getClientID(din.readUTF(),din.readInt());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {			
 			e.printStackTrace();
 		}
 	}
@@ -91,8 +88,7 @@ public class ServerThread extends ClientThread{
 				}
 			}
 			fileReader.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {			
 			e.printStackTrace();
 		}
 	}
@@ -149,6 +145,7 @@ public class ServerThread extends ClientThread{
 					break;
 				}
 			}
+			fileReader.close();
 			int needed = accessList.get(0);
 			Share[] shares = new Share[needed];
 			for (int i = 1; i < needed+1/* accessList.size() */; i++){
@@ -184,12 +181,9 @@ public class ServerThread extends ClientThread{
 			dout.writeInt(sign.length);
 			dout.write(sign, 0, sign.length);
 			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {			
 			e.printStackTrace();
 		}
-		// TODO Cipher and sign
-
 	}
 
 	public List<Integer> getAccessToFileList(String filename, Integer clientId) {
@@ -200,5 +194,4 @@ public class ServerThread extends ClientThread{
 					return list;
 		return null;
 	}
-
 }
