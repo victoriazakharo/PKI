@@ -26,7 +26,16 @@ public class CA {
 	private ServerSocket storageSocket, clientSocket;
 	private StorageThread storageThread;
 	private PrivateKey privateKey;
+	private PublicKey storagePublicKey;
 	
+	public PublicKey getStoragePublicKey() {
+		return storagePublicKey;
+	}
+
+	public void setStoragePublicKey(PublicKey storagePublicKey) {
+		this.storagePublicKey = storagePublicKey;
+	}
+
 	public PrivateKey getPrivateKey() {
 		return privateKey;
 	}

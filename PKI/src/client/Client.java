@@ -28,7 +28,7 @@ public class Client {
 	protected PrivateKey privateKey;
 	protected String distinguishedName, host, certName;
 	protected Signature sign;
-	protected PublicKey caPublicKey;
+	protected PublicKey caPublicKey,storagePublicKey;
 
 	public Client() {
 		try {
@@ -110,6 +110,16 @@ public class Client {
 		    	FileOutputStream fos = new FileOutputStream("D://publicCA" + certName + ".key");
 				fos.write(x509EncodedKeySpec.getEncoded());
 				fos.close();
+				len = caDin.readInt();
+				publicKeyBytes = new byte[len];
+				caDin.readFully(publicKeyBytes, 0, len);
+		    	storagePublicKey = KeyFactory.getInstance("RSA")
+		    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		    	x509EncodedKeySpec = new X509EncodedKeySpec(
+		    			publicKeyBytes);
+		    	fos = new FileOutputStream("D://publicStorage" + certName + ".key");
+				fos.write(x509EncodedKeySpec.getEncoded());
+				fos.close();
 		    	readCertificateAndPrivateKey();
 			} else {
 				System.out.println("Certification request denied.");
@@ -134,6 +144,16 @@ public class Client {
 		    	X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(
 		    			publicKeyBytes);
 				FileOutputStream fos = new FileOutputStream("D://publicCA" + certName + ".key");
+				fos.write(x509EncodedKeySpec.getEncoded());
+				fos.close();
+				len = caDin.readInt();
+				publicKeyBytes = new byte[len];
+				caDin.readFully(publicKeyBytes, 0, len);
+		    	storagePublicKey = KeyFactory.getInstance("RSA")
+		    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		    	x509EncodedKeySpec = new X509EncodedKeySpec(
+		    			publicKeyBytes);
+		    	fos = new FileOutputStream("D://publicStorage" + certName + ".key");
 				fos.write(x509EncodedKeySpec.getEncoded());
 				fos.close();
 		    	readCertificateAndPrivateKey(path);
@@ -359,11 +379,25 @@ public class Client {
 				anotherCert.checkValidity();
 				System.out.println("Sertificate is up to date.");
 				storageDout.writeUTF(anotherCert.getSubjectDN().toString());
-				if(storageDin.readInt() == 0) {
+				Integer answer = storageDin.readInt();
+				byte[] data=new byte[8];
+				data[0]=answer.byteValue();
+				sign = new byte[256];
+				if( answer == 0) {
+					storageDin.read(sign, 0, 256);
+					if(RSA.checkSignature(data, sign, storagePublicKey))
 					System.out.println("Sertificate is withdrawn.");
+					else 
+						System.out.println("Wrong storage signature.");
 				} else {
+					storageDin.read(sign, 0, 256);
+					if(RSA.checkSignature(data, sign, storagePublicKey)){
+						System.out.println("Wrong storage signature");
+					}
+					else{
 					System.out.println("Sertificate is ok.");
 					out = RSA.decrypt(read, privateKey);
+					}
 				}
 			}
 			else {
@@ -415,13 +449,28 @@ public class Client {
 				System.out.println("Signature from client is valid.");
 				anotherCert.checkValidity();
 				System.out.println("Sertificate is up to date.");
-				storageDout.writeUTF(anotherCert.getSubjectDN().toString());							
-				if (storageDin.readInt() == 0) {
+				storageDout.writeUTF(anotherCert.getSubjectDN().toString());
+				byte[] sign = new byte[256];
+				Integer answer = storageDin.readInt();
+				byte[] data=new byte[8];
+				data[0]=answer.byteValue();
+				if( answer == 0) {
+					storageDin.read(sign, 0, 8);
+					if(RSA.checkSignature(data, sign, storagePublicKey))
 					System.out.println("Sertificate is withdrawn.");
+					else 
+						System.out.println("Wrong storage signature.");
 					return false;
 				} else {
+					storageDin.read(sign, 0, 8);
+					if(RSA.checkSignature(data, sign, storagePublicKey)){
+						System.out.println("Wrong storage signature");
+						return false;
+					}
+					else{
 					System.out.println("Sertificate is ok.");
 					return true;
+					}
 				}
 			} else {
 				System.out.println("Signature from client is invalid.");
@@ -452,6 +501,13 @@ public class Client {
 		fis.read(publicKeyBytes);		
 		fis.close();
 		caPublicKey = KeyFactory.getInstance("RSA")
+    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+
+		fis = new FileInputStream(String.format("D://publicStorage" + certName + ".key"));
+		publicKeyBytes = new byte[fis.available()];
+		fis.read(publicKeyBytes);		
+		fis.close();
+		storagePublicKey = KeyFactory.getInstance("RSA")
     			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
 		
 		sign.initVerify(caPublicKey);
@@ -488,11 +544,19 @@ public class Client {
 		byte signature[] = new byte[fis.available()];
 		fis.read(signature);		
 		fis.close();
+		
 		fis = new FileInputStream(String.format("D://publicCA" + certName + ".key"));
 		byte publicKeyBytes[] = new byte[fis.available()];
 		fis.read(publicKeyBytes);		
 		fis.close();
 		caPublicKey = KeyFactory.getInstance("RSA")
+    			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		
+		fis = new FileInputStream(String.format("D://publicStorage" + certName + ".key"));
+		publicKeyBytes = new byte[fis.available()];
+		fis.read(publicKeyBytes);		
+		fis.close();
+		storagePublicKey = KeyFactory.getInstance("RSA")
     			.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
 		
 		sign.initVerify(caPublicKey);

@@ -84,6 +84,10 @@ public class ClientThread extends Thread {
 					dout.writeInt(publicKeyBytes.length);				
 					dout.write(publicKeyBytes, 0, publicKeyBytes.length);
 					System.out.println("CA passed public key to client.");
+					publicKeyBytes = ca.getStoragePublicKey().getEncoded();
+					dout.writeInt(publicKeyBytes.length);				
+					dout.write(publicKeyBytes, 0, publicKeyBytes.length);
+					System.out.println("CA passed public key to client.");
 				} else {
 					dout.writeInt(client.Client.CERTIFICATE_DENIED);
 				}
