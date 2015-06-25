@@ -10,12 +10,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +36,6 @@ import client.Client;
 public class ResourceStorage extends Client {
 	
 	private HashMap<String, List<List<Integer>>> accessMap;
-
 	public ResourceStorage() {
 		super();
 	}
@@ -50,8 +51,21 @@ public class ResourceStorage extends Client {
 		while(true) {
 	    	try {		
 				ServerThread serverThread = new ServerThread(serverSocket.accept(),cert,privateKey, accessMap,this);
+				//System.out.println(serverThread.getSocket().toString());
 				serverThread.start();	
-			} catch (IOException e) {			
+			}
+	    	catch(SocketException ex){
+				try {
+					din.close();
+					dout.close();
+					socket.close();
+					System.out.println("Client disconnected.");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+	    	catch (IOException e) {			
 				e.printStackTrace();
 			}	
     	}

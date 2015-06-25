@@ -1,7 +1,9 @@
 package storage;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 
@@ -19,8 +21,9 @@ public class StorageThread extends Thread{
     public void run() {
     	while(true) {
 	    	try {		
-				ClientThread clientThread = new ClientThread(storageSocket.accept(), keyStore, privateKey);
+	    		ClientThread clientThread = new ClientThread(storageSocket.accept(), keyStore, privateKey);
 				clientThread.start();	
+				System.out.println("Client connected.");
 			} catch (IOException e) {			
 				e.printStackTrace();
 			}	

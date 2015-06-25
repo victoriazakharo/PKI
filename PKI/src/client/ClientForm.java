@@ -159,14 +159,22 @@ public class ClientForm extends JFrame {
 		return hasCertificate;
 	}
 	public ClientForm(Client client, String host, String port) {
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				for(ClientFile file: clientFiles)
-				{
-					file.dispose();
-				}
-				dispose();
+				int confirm = JOptionPane.showOptionDialog(rootPane,
+                        "Завершить работу?",
+                        "Выход", JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE, null, new String[] {"Да", "Нет"}, "Нет");
+                if (confirm == 0) {
+                	for(ClientFile file: clientFiles)
+    				{
+    					file.dispose();
+    				}
+    				dispose();
+                    System.exit(1);
+                }				
 			}
 		});
 		this.client=client;
@@ -175,7 +183,7 @@ public class ClientForm extends JFrame {
 		this.clientFiles=new HashSet<>();
 		this.setTitle("Клиент(хост: "+host+"; порт:"+port+")");
 		hasCertificate=false;
-		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		//setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 504, 342);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));

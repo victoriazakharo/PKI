@@ -2,6 +2,7 @@ package ca;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.security.*;
 import java.security.cert.*;
 import java.security.spec.*;
@@ -11,12 +12,14 @@ import crypto.RSA;
 public class ClientThread extends Thread {
 	private DataInputStream din; 
 	private DataOutputStream dout;
+	private Socket socket;
     private CA ca;
 	
 	public ClientThread(Socket s, CA ca) throws IOException 
 	{		
-		din = new DataInputStream(s.getInputStream()); 
-		dout = new DataOutputStream(s.getOutputStream());
+		this.socket=s;
+		din = new DataInputStream(socket.getInputStream()); 
+		dout = new DataOutputStream(socket.getOutputStream());
         this.ca = ca;
 	}
 	
@@ -54,7 +57,10 @@ public class ClientThread extends Thread {
 		fos.close();
 	}
 	
-	public void run() {
+	public Socket getSocket(){
+		return this.socket;
+	}
+ 	public void run() {
 		String dn, certID;
 		try {
 			while((dn = din.readUTF()) != null) {	
@@ -92,7 +98,20 @@ public class ClientThread extends Thread {
 					dout.writeInt(client.Client.CERTIFICATE_DENIED);
 				}
 			}
-		} catch (IOException e) {			
+		}
+		catch(SocketException ex){
+			try {
+				din.close();
+				dout.close();
+				socket.close();
+				System.out.println("Client disconnected.");
+				this.interrupt();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		catch (IOException e) {			
 			e.printStackTrace();
 		}
 	}

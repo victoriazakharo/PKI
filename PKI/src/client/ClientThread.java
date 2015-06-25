@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -35,7 +36,7 @@ public class ClientThread extends Thread {
 	protected X509Certificate cert, anotherCert;
 	protected PrivateKey privateKey;	
 	protected Signature sign;
-	protected Socket storageSocket; 
+	protected Socket storageSocket, socket; 
 	public int  port;
 	public String host;
 	protected ClientFrame frame;
@@ -43,14 +44,20 @@ public class ClientThread extends Thread {
 	public Integer answer=0;
 	
 	public ClientThread(Socket s, X509Certificate cert, PrivateKey privateKey) {
-		this.cert = cert;		
+		this.cert = cert;
+		this.socket = s;
 		this.privateKey = privateKey;
 		try {
 			sign = Signature.getInstance("MD5WithRSA");
+			dout = new DataOutputStream(socket.getOutputStream());
+			din = new DataInputStream(socket.getInputStream());	
+			port = socket.getLocalPort();
+			host = socket.getLocalAddress().toString();
+			/*
 			dout = new DataOutputStream(s.getOutputStream());
 			din = new DataInputStream(s.getInputStream());	
 			port = s.getLocalPort();
-			host = s.getLocalAddress().toString();
+			host = s.getLocalAddress().toString();*/
 			storageSocket = new Socket(Client.STORAGE_HOST, Client.STORAGE_PORT);
 			storageDin = new DataInputStream(storageSocket.getInputStream());
 			storageDout =  new DataOutputStream(storageSocket.getOutputStream());
@@ -64,6 +71,9 @@ public class ClientThread extends Thread {
 		frame.setVisible(true); 
 	}
 	
+	public Socket getSocket(){
+		return this.socket;
+	}
 	public void setAnswerReady() {
 		answerReady = true;
 	}
@@ -73,7 +83,20 @@ public class ClientThread extends Thread {
 			int request = Client.EXIT;
 			try {
 				request = din.readInt();
-			} catch (IOException e) {			
+			} 
+			catch (SocketException ex){
+				try {
+					din.close();
+					dout.close();
+					socket.close();
+					System.out.println("Client disconnected.");
+					break;
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			catch (IOException e) {			
 				e.printStackTrace();
 			}
 			if(request == Client.AUTHORIZE) {
@@ -91,7 +114,20 @@ public class ClientThread extends Thread {
 						//getHostAndPort();
 						responseForRequest(request);
 					}
-				} catch (IOException e) {					
+				}
+				catch (SocketException ex){
+					try {
+						din.close();
+						dout.close();
+						socket.close();
+						System.out.println("Client disconnected.");
+						return;
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				catch (IOException e) {					
 					e.printStackTrace();
 				}
 			}
